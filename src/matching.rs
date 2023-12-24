@@ -5,6 +5,7 @@ struct Point {
 
 pub trait Matcher {
     fn new(graph: Vec<Vec<usize>>) -> Self;
+    fn init(&mut self, graph: Vec<Vec<usize>>);
 
     // returns matching size
     fn solve(&mut self) -> usize;
@@ -65,6 +66,13 @@ impl Matcher for TurboMatching {
         }
     }
 
+    fn init(&mut self, graph: Vec<Vec<usize>>) {
+        self.g = graph;
+        let n = self.g.len();
+        self.vis = vec![false; n];
+        self.mat = vec![-1; n];
+    }
+
     fn solve(&mut self) -> usize {
         self.matching()
     }
@@ -80,7 +88,7 @@ fn dist(u: &Point, v: &Point) -> i32 {
     return i32::abs(u.x-v.x) + i32::abs(u.y-v.y);
 }
 
-fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
+fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
     let mut left: i32 = 0;
     let mut right: i32 = 1000*1000*1000;
 
@@ -101,8 +109,8 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
             }
         }
 
-        let mut mat = TurboMatching::new(graph);
-        let got = mat.solve();
+        matcher.init(graph);
+        let got = matcher.solve();
         if got == std::cmp::min(n, m) {
             res = mid;
             right = mid-1;
@@ -119,20 +127,24 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
 mod tests {
     use rand::Rng;
 
+    use crate::matching::TurboMatching;
+
     use super::{solve, Point};
 
     #[test]
     fn simple() {
         let agents = vec![Point{ x: 0, y: 0 }];
         let targets = vec![Point{ x: 2, y: 2 }];
-        assert_eq!(solve(&agents, &targets), 4);
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        assert_eq!(solve(&agents, &targets, &mut matcher), 4);
     }
 
     #[test]
     fn three_agents() {
         let agents = vec![Point{ x: 0, y: 0 }, Point{ x: 0, y: 10 }, Point{ x: -10, y: 40}];
         let targets = vec![Point{ x: 5, y: 0 }, Point{ x: 5, y: 10 }, Point{ x: 2, y: 38}];
-        assert_eq!(solve(&agents, &targets), 14);
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        assert_eq!(solve(&agents, &targets, &mut matcher), 14);
     }
 
     #[test]
@@ -147,7 +159,8 @@ mod tests {
             targets.push(Point{ x: rng.gen_range(-mil..mil), y: rng.gen_range(-mil..mil) });
         }
 
-        let got = solve(&agents, &targets);
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        let got = solve(&agents, &targets, &mut matcher);
         println!("{}", got);
     }
 }
