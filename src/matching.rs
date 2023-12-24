@@ -3,38 +3,75 @@ struct Point {
     y: i32,
 }
 
-fn dfs(v: usize, g: &Vec<Vec<usize>>, vis: &mut Vec<bool>, mat: &mut Vec<i32>) -> bool {
-    vis[v] = true;
-    for &u in g[v].iter() {
-        if mat[u] == -1 || (!vis[mat[u] as usize] && dfs(mat[u] as usize, g, vis, mat)) {
-            mat[u] = v as i32;
-            mat[v] = u as i32;
-            return true;
-        }
-    }
-    return false;
+pub trait Matcher {
+    fn new(graph: Vec<Vec<usize>>) -> Self;
+
+    // returns matching size
+    fn solve(&mut self) -> usize;
+
+    // returns hashmap with selected vertices
+    fn get_matching(&self) -> &Vec<i32>;
 }
 
-// dfs matching with heuristic, hopcroft-karp was too hard to implement rn :(
-// returns size of matching, leaves matching in mat
-// average performance O(n)
-// worst case O(n*m)
-fn matching(g: &Vec<Vec<usize>>, mat: &mut Vec<i32>) -> usize {
-    let n = g.len();
-    let mut changed = true;
-    let mut result = 0;
-    let mut vis = vec![false; n];
-    while changed {
-        changed = false;
-        vis.fill(false);
-        for v in 0..n {
-            if mat[v] == -1 && dfs(v, &g, &mut vis, mat) {
-                changed = true;
-                result += 1;
+pub struct TurboMatching {
+    g: Vec<Vec<usize>>,
+    vis: Vec<bool>,
+    mat: Vec<i32>,
+}
+
+impl TurboMatching {
+    fn dfs(&mut self, v: usize) -> bool {
+        self.vis[v] = true;
+        for idx in 0..self.g[v].len() {
+            let u = self.g[v][idx];
+            if self.mat[u] == -1 || (!self.vis[self.mat[u] as usize] && self.dfs(self.mat[u] as usize)) {
+                self.mat[u] = v as i32;
+                self.mat[v] = u as i32;
+                return true;
             }
         }
+        return false;
     }
-    return result;
+
+    // dfs matching with heuristic
+    // average performance O(n)
+    // worst case O(n*m)
+    fn matching(&mut self) -> usize {
+        let n = self.g.len();
+        let mut changed = true;
+        let mut result = 0;
+        let mut vis = vec![false; n];
+        while changed {
+            changed = false;
+            vis.fill(false);
+            for v in 0..n {
+                if self.mat[v] == -1 && self.dfs(v) {
+                    changed = true;
+                    result += 1;
+                }
+            }
+        }
+        result
+    }
+}
+
+impl Matcher for TurboMatching {
+    fn new(graph: Vec<Vec<usize>>) -> Self {
+        let n: usize = graph.len();
+        TurboMatching {
+            g: graph,
+            vis: vec![false; n],
+            mat: vec![-1; n],
+        }
+    }
+
+    fn solve(&mut self) -> usize {
+        self.matching()
+    }
+
+    fn get_matching(&self) -> &Vec<i32> {
+        &self.mat
+    }
 }
 
 // temporary solution, ignores walls
@@ -64,8 +101,8 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
             }
         }
 
-        let mut mat = vec![-1; n+m];
-        let got = matching(&graph, &mut mat);
+        let mut mat = TurboMatching::new(graph);
+        let got = mat.solve();
         if got == std::cmp::min(n, m) {
             res = mid;
             right = mid-1;
