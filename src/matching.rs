@@ -14,74 +14,6 @@ pub trait Matcher {
     fn get_matching(&self) -> &Vec<i32>;
 }
 
-pub struct TurboMatching {
-    g: Vec<Vec<usize>>,
-    vis: Vec<bool>,
-    mat: Vec<i32>,
-}
-
-impl TurboMatching {
-    fn dfs(&mut self, v: usize) -> bool {
-        self.vis[v] = true;
-        for idx in 0..self.g[v].len() {
-            let u = self.g[v][idx];
-            if self.mat[u] == -1 || (!self.vis[self.mat[u] as usize] && self.dfs(self.mat[u] as usize)) {
-                self.mat[u] = v as i32;
-                self.mat[v] = u as i32;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // dfs matching with heuristic
-    // average performance O(n)
-    // worst case O(n*m)
-    fn matching(&mut self) -> usize {
-        let n = self.g.len();
-        let mut changed = true;
-        let mut result = 0;
-        let mut vis = vec![false; n];
-        while changed {
-            changed = false;
-            vis.fill(false);
-            for v in 0..n {
-                if self.mat[v] == -1 && self.dfs(v) {
-                    changed = true;
-                    result += 1;
-                }
-            }
-        }
-        result
-    }
-}
-
-impl Matcher for TurboMatching {
-    fn new(graph: Vec<Vec<usize>>) -> Self {
-        let n: usize = graph.len();
-        TurboMatching {
-            g: graph,
-            vis: vec![false; n],
-            mat: vec![-1; n],
-        }
-    }
-
-    fn init(&mut self, graph: Vec<Vec<usize>>) {
-        self.g = graph;
-        let n = self.g.len();
-        self.vis = vec![false; n];
-        self.mat = vec![-1; n];
-    }
-
-    fn solve(&mut self) -> usize {
-        self.matching()
-    }
-
-    fn get_matching(&self) -> &Vec<i32> {
-        &self.mat
-    }
-}
-
 // temporary solution, ignores walls
 #[inline(always)]
 fn dist(u: &Point, v: &Point) -> i32 {
@@ -127,7 +59,7 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) 
 mod tests {
     use rand::Rng;
 
-    use crate::matching::TurboMatching;
+    use crate::turbo::TurboMatching;
 
     use super::{solve, Point};
 
