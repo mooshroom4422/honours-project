@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn large() {
+    fn medium() {
         let edges: Vec<(usize, usize)> =
                     vec![(10, 14), (8, 17), (5, 11), (4, 20), (10, 11),
                          (5, 14), (5, 12), (2, 17), (10, 13), (4, 13),
@@ -125,5 +125,23 @@ mod tests {
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 8);
+    }
+
+    #[test]
+    fn large_random() {
+        let maxn = 250_000;
+        let mil = 1_000_000;
+
+        let mut rng = rand::thread_rng();
+        let mut g: Vec<Vec<usize>> = vec![Vec::new(); 2*maxn];
+        for _ in 0..mil {
+            let v = rng.gen_range(0..maxn);
+            let u = rng.gen_range(maxn..2*maxn);
+            add_edge(&mut g, v, u);
+        }
+
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        matcher.init(g);
+        matcher.solve();
     }
 }

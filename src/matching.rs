@@ -22,7 +22,7 @@ fn dist(u: &Point, v: &Point) -> i32 {
 
 fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
     let mut left: i32 = 0;
-    let mut right: i32 = 1000*1000*1000;
+    let mut right: i32 = 1000_000_000;
 
     let n = agents.len();
     let m = targets.len();
@@ -73,8 +73,7 @@ mod tests {
 
     #[test]
     fn three_agents() {
-        let agents = vec![Point{ x: 0, y: 0 }, Point{ x: 0, y: 10 }, Point{ x: -10, y: 40}];
-        let targets = vec![Point{ x: 5, y: 0 }, Point{ x: 5, y: 10 }, Point{ x: 2, y: 38}];
+        let agents = vec![Point{ x: 0, y: 0 }, Point{ x: 0, y: 10 }, Point{ x: -10, y: 40}]; let targets = vec![Point{ x: 5, y: 0 }, Point{ x: 5, y: 10 }, Point{ x: 2, y: 38}];
         let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
         assert_eq!(solve(&agents, &targets, &mut matcher), 14);
     }
@@ -85,7 +84,7 @@ mod tests {
         let mut targets: Vec<Point> = Vec::new();
 
         let mut rng = rand::thread_rng();
-        let mil = 1000*1000;
+        let mil = 1_000_000;
         for _ in 0..2000 {
             agents.push(Point{ x: rng.gen_range(-mil..mil), y: rng.gen_range(-mil..mil) });
             targets.push(Point{ x: rng.gen_range(-mil..mil), y: rng.gen_range(-mil..mil) });
