@@ -31,9 +31,7 @@ impl HopcroftKarp {
             }
         }
         self.dist[self.NIL] = INF;
-        let mut iter = 0;
         while !q.is_empty() {
-            iter += 1;
             let u = q.pop_front().unwrap();
             if self.dist[u] < self.dist[self.NIL] {
                 for &v in self.g[u].iter() {
@@ -188,7 +186,7 @@ mod tests {
 
         let mut matcher = HopcroftKarp::new(g, setu, setv);
         let got = matcher.solve();
-        let mat = matcher.get_matching();
+        let _mat = matcher.get_matching();
         assert_eq!(got, 8);
     }
 
