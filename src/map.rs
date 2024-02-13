@@ -6,6 +6,15 @@ enum Tile {
     Free,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+    None,
+}
+
 pub struct Point {
     pub x: usize,
     pub y: usize,
@@ -16,6 +25,7 @@ pub struct Map {
     width: usize,
     map: Vec<Vec<Tile>>,
     dist: Vec<Vec<usize>>,
+    from: Vec<Vec<Direction>>,
 }
 
 impl Map {
@@ -52,19 +62,12 @@ impl Map {
             width,
             map,
             dist: Vec::new(),
+            from: Vec::new(),
         };
-
-        fn go(stac: usize, now: usize, x: usize, y:usize, q: &mut VecDeque<(usize, usize)>,
-              dist: &mut Vec<Vec<usize>>, res: &mut Map) {
-            let to = res.conv(x, y);
-            if dist[stac][to] == usize::MAX {
-                q.push_back((x, y));
-                dist[stac][to] = dist[stac][now]+1;
-            }
-        }
 
         let tiles = height*width;
         let mut dist = vec![vec![usize::MAX; tiles]; tiles];
+        let mut from = vec![vec![Direction::None; tiles]; tiles];
         for stax in 0..height {
             for stay in 0..width {
                 if !res.valid(stax, stay) { continue; }
@@ -77,25 +80,66 @@ impl Map {
                     let now = res.conv(x, y);
 
                     if x > 0 && res.valid(x-1, y) {
-                        go(stac, now, x-1, y, &mut q, &mut dist, &mut res);
+                        let to = res.conv(x-1, y);
+                        if dist[stac][to] == usize::MAX {
+                            if from[stac][now] == Direction::None {
+                                from[stac][to] = Direction::North;
+                            }
+                            else {
+                                from[stac][to] = from[stac][now].clone();
+                            }
+                            q.push_back((x-1, y));
+                            dist[stac][to] = dist[stac][now]+1;
+                        }
                     }
 
                     if x < height-1 && res.valid(x+1, y) {
-                        go(stac, now, x+1, y, &mut q, &mut dist, &mut res);
+                        let to = res.conv(x+1, y);
+                        if dist[stac][to] == usize::MAX {
+                            if from[stac][now] == Direction::None {
+                                from[stac][to] = Direction::South;
+                            }
+                            else {
+                                from[stac][to] = from[stac][now].clone();
+                            }
+                            q.push_back((x+1, y));
+                            dist[stac][to] = dist[stac][now]+1;
+                        }
                     }
 
                     if y > 0 && res.valid(x, y-1) {
-                        go(stac, now, x, y-1, &mut q, &mut dist, &mut res);
+                        let to = res.conv(x, y-1);
+                        if dist[stac][to] == usize::MAX {
+                            if from[stac][now] == Direction::None {
+                                from[stac][to] = Direction::West;
+                            }
+                            else {
+                                from[stac][to] = from[stac][now].clone();
+                            }
+                            q.push_back((x, y-1));
+                            dist[stac][to] = dist[stac][now]+1;
+                        }
                     }
 
                     if y < width-1 && res.valid(x, y+1) {
-                        go(stac, now, x, y+1, &mut q, &mut dist, &mut res);
+                        let to = res.conv(x, y+1);
+                        if dist[stac][to] == usize::MAX {
+                            if from[stac][now] == Direction::None {
+                                from[stac][to] = Direction::East;
+                            }
+                            else {
+                                from[stac][to] = from[stac][now].clone();
+                            }
+                            q.push_back((x, y+1));
+                            dist[stac][to] = dist[stac][now]+1;
+                        }
                     }
                }
             }
         }
 
         res.dist = dist;
+        res.from = from;
 
         res
     }
@@ -191,6 +235,21 @@ mod tests {
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
         assert_eq!(exp, map.get_dist(3, 2));
-
     }
+
+    #[test]
+    fn test_from() {
+        let map = Map::new("resources/maps/example.map");
+
+        let exp: Vec<Direction> = Vec::from([
+                Direction::None, Direction::None, Direction::None, Direction::None, Direction::None,
+                Direction::None, Direction::None, Direction::East, Direction::East, Direction::None,
+                Direction::None, Direction::South, Direction::None, Direction::East, Direction::None,
+                Direction::None, Direction::South, Direction::South, Direction::South, Direction::None,
+                Direction::None, Direction::None, Direction::None, Direction::None, Direction::None,
+            ]);
+
+        assert_eq!(exp, map.from[map.conv(1, 1)]);
+    }
+
 }
