@@ -2,8 +2,7 @@ use std::collections::VecDeque;
 
 use crate::matching::Matcher;
 
-// const INF: usize = usize::MAX;
-const INF: usize = 1_000_000_000;
+const INF: usize = usize::MAX;
 
 // https://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm
 #[allow(non_snake_case)]
