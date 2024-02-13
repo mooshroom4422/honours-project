@@ -3,38 +3,15 @@ struct Point {
     y: i32,
 }
 
-fn dfs(v: usize, g: &Vec<Vec<usize>>, vis: &mut Vec<bool>, mat: &mut Vec<i32>) -> bool {
-    vis[v] = true;
-    for &u in g[v].iter() {
-        if mat[u] == -1 || (!vis[mat[u] as usize] && dfs(mat[u] as usize, g, vis, mat)) {
-            mat[u] = v as i32;
-            mat[v] = u as i32;
-            return true;
-        }
-    }
-    return false;
-}
+pub trait Matcher {
+    fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self;
+    fn init(&mut self, graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>);
 
-// dfs matching with heuristic, hopcroft-karp was too hard to implement rn :(
-// returns size of matching, leaves matching in mat
-// average performance O(n)
-// worst case O(n*m)
-fn matching(g: &Vec<Vec<usize>>, mat: &mut Vec<i32>) -> usize {
-    let n = g.len();
-    let mut changed = true;
-    let mut result = 0;
-    let mut vis = vec![false; n];
-    while changed {
-        changed = false;
-        vis.fill(false);
-        for v in 0..n {
-            if mat[v] == -1 && dfs(v, &g, &mut vis, mat) {
-                changed = true;
-                result += 1;
-            }
-        }
-    }
-    return result;
+    // returns matching size
+    fn solve(&mut self) -> usize;
+
+    // returns vector with selected vertices
+    fn get_matching(&mut self) -> &Vec<i32>;
 }
 
 // temporary solution, ignores walls
@@ -43,9 +20,9 @@ fn dist(u: &Point, v: &Point) -> i32 {
     return i32::abs(u.x-v.x) + i32::abs(u.y-v.y);
 }
 
-fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
+fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
     let mut left: i32 = 0;
-    let mut right: i32 = 1000*1000*1000;
+    let mut right: i32 = 1_000_000_000;
 
     let n = agents.len();
     let m = targets.len();
@@ -64,8 +41,10 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
             }
         }
 
-        let mut mat = vec![-1; n+m];
-        let got = matching(&graph, &mut mat);
+        let setu = (0..agents.len()).collect();
+        let setv = (agents.len()..agents.len()+targets.len()).collect();
+        matcher.init(graph, setu, setv);
+        let got = matcher.solve();
         if got == std::cmp::min(n, m) {
             res = mid;
             right = mid-1;
@@ -82,20 +61,23 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>) -> i32 {
 mod tests {
     use rand::Rng;
 
+    use crate::turbo::TurboMatching;
+
     use super::{solve, Point};
 
     #[test]
     fn simple() {
         let agents = vec![Point{ x: 0, y: 0 }];
         let targets = vec![Point{ x: 2, y: 2 }];
-        assert_eq!(solve(&agents, &targets), 4);
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        assert_eq!(solve(&agents, &targets, &mut matcher), 4);
     }
 
     #[test]
     fn three_agents() {
-        let agents = vec![Point{ x: 0, y: 0 }, Point{ x: 0, y: 10 }, Point{ x: -10, y: 40}];
-        let targets = vec![Point{ x: 5, y: 0 }, Point{ x: 5, y: 10 }, Point{ x: 2, y: 38}];
-        assert_eq!(solve(&agents, &targets), 14);
+        let agents = vec![Point{ x: 0, y: 0 }, Point{ x: 0, y: 10 }, Point{ x: -10, y: 40}]; let targets = vec![Point{ x: 5, y: 0 }, Point{ x: 5, y: 10 }, Point{ x: 2, y: 38}];
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        assert_eq!(solve(&agents, &targets, &mut matcher), 14);
     }
 
     #[test]
@@ -104,13 +86,14 @@ mod tests {
         let mut targets: Vec<Point> = Vec::new();
 
         let mut rng = rand::thread_rng();
-        let mil = 1000*1000;
+        let mil = 1_000_000;
         for _ in 0..2000 {
             agents.push(Point{ x: rng.gen_range(-mil..mil), y: rng.gen_range(-mil..mil) });
             targets.push(Point{ x: rng.gen_range(-mil..mil), y: rng.gen_range(-mil..mil) });
         }
 
-        let got = solve(&agents, &targets);
+        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
+        let got = solve(&agents, &targets, &mut matcher);
         println!("{}", got);
     }
 }
