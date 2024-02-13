@@ -8,14 +8,14 @@ const INF: usize = 1_000_000_000;
 // https://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm
 #[allow(non_snake_case)]
 pub struct HopcroftKarp {
-    g: Vec<Vec<usize>>,
-    setu: Vec<usize>,
-    setv: Vec<usize>,
-    pairu: Vec<usize>,
-    pairv: Vec<usize>,
-    dist: Vec<usize>,
-    matching: Vec<i32>,
-    NIL: usize,
+    pub g: Vec<Vec<usize>>,
+    pub setu: Vec<usize>,
+    pub setv: Vec<usize>,
+    pub pairu: Vec<usize>,
+    pub pairv: Vec<usize>,
+    pub dist: Vec<usize>,
+    pub matching: Vec<i32>,
+    pub NIL: usize,
 }
 
 impl HopcroftKarp {
@@ -80,7 +80,7 @@ impl Matcher for HopcroftKarp {
         }
     }
 
-    fn init(&mut self, graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) {
+   fn init(&mut self, graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) {
         let n = graph.len();
         let nil = 0;
         self.g = graph;

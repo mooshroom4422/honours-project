@@ -6,7 +6,12 @@ enum Tile {
     Free,
 }
 
-struct Map {
+pub struct Point {
+    pub x: usize,
+    pub y: usize,
+}
+
+pub struct Map {
     height: usize,
     width: usize,
     map: Vec<Vec<Tile>>,
@@ -14,7 +19,7 @@ struct Map {
 }
 
 impl Map {
-    fn new(file_path: &str) -> Self {
+    pub fn new(file_path: &str) -> Self {
         let file = fs::read_to_string(file_path)
             .expect("error reading file");
 
@@ -108,6 +113,10 @@ impl Map {
             return usize::MAX;
         }
         return self.dist[self.conv(fx, fy)][self.conv(tx, ty)];
+    }
+
+    pub fn dist_point(&self, p1: &Point, p2: &Point) -> usize {
+        self.dist(p1.x, p1.y, p2.x, p2.y)
     }
 
     fn get_dist(&self, x:usize, y: usize) -> Vec<usize> {
