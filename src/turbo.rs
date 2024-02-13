@@ -43,7 +43,7 @@ impl TurboMatching {
 }
 
 impl Matcher for TurboMatching {
-    fn new(graph: Vec<Vec<usize>>) -> Self {
+    fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self {
         let n: usize = graph.len();
         TurboMatching {
             g: graph,
@@ -52,7 +52,7 @@ impl Matcher for TurboMatching {
         }
     }
 
-    fn init(&mut self, graph: Vec<Vec<usize>>) {
+    fn init(&mut self, graph: Vec<Vec<usize>>, _setu: Vec<usize>, _setv: Vec<usize>) {
         self.g = graph;
         let n = self.g.len();
         self.vis = vec![false; n];
@@ -63,7 +63,7 @@ impl Matcher for TurboMatching {
         self.matching()
     }
 
-    fn get_matching(&self) -> &Vec<i32> {
+    fn get_matching(&mut self) -> &Vec<i32> {
         &self.mat
     }
 }
@@ -85,7 +85,7 @@ mod tests {
         add_edge(&mut g, 1, 2);
 
         let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g);
+        matcher.init(g, Vec::new(), Vec::new());
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -99,7 +99,7 @@ mod tests {
         add_edge(&mut g, 1, 2);
 
         let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g);
+        matcher.init(g, Vec::new(), Vec::new());
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -121,7 +121,7 @@ mod tests {
         }
 
         let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g);
+        matcher.init(g, Vec::new(), Vec::new());
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 8);
@@ -141,7 +141,7 @@ mod tests {
         }
 
         let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g);
+        matcher.init(g, Vec::new(), Vec::new());
         matcher.solve();
     }
 }

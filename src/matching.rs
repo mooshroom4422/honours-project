@@ -4,14 +4,14 @@ struct Point {
 }
 
 pub trait Matcher {
-    fn new(graph: Vec<Vec<usize>>) -> Self;
-    fn init(&mut self, graph: Vec<Vec<usize>>);
+    fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self;
+    fn init(&mut self, graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>);
 
     // returns matching size
     fn solve(&mut self) -> usize;
 
-    // returns hashmap with selected vertices
-    fn get_matching(&self) -> &Vec<i32>;
+    // returns vector with selected vertices
+    fn get_matching(&mut self) -> &Vec<i32>;
 }
 
 // temporary solution, ignores walls
@@ -22,7 +22,7 @@ fn dist(u: &Point, v: &Point) -> i32 {
 
 fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
     let mut left: i32 = 0;
-    let mut right: i32 = 1000_000_000;
+    let mut right: i32 = 1_000_000_000;
 
     let n = agents.len();
     let m = targets.len();
@@ -41,7 +41,9 @@ fn solve(agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) 
             }
         }
 
-        matcher.init(graph);
+        let setu = (0..agents.len()).collect();
+        let setv = (agents.len()..agents.len()+targets.len()).collect();
+        matcher.init(graph, setu, setv);
         let got = matcher.solve();
         if got == std::cmp::min(n, m) {
             res = mid;
