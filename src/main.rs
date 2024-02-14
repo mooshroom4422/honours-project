@@ -2,7 +2,10 @@ mod matching;
 mod turbo;
 mod hopcroft_karp;
 mod map;
+mod runner;
+
+use crate::map::*;
 
 fn main() {
-    println!("Hello, world!");
+    let map = Map::new("resources/maps/example.map");
 }
