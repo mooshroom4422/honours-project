@@ -2,6 +2,11 @@ mod matching;
 mod turbo;
 mod hopcroft_karp;
 
+mod database;
+use database::Database;
+
 fn main() {
-    println!("Hello, world!");
+    Database db = Database::new()?;
+
+    
 }
