@@ -43,8 +43,8 @@ pub fn go_direction(point: Point, direction: Direction) -> Point {
 }
 
 pub struct Map {
-    height: usize,
-    width: usize,
+    pub height: usize,
+    pub width: usize,
     map: Vec<Vec<Tile>>,
     dist: Vec<Vec<usize>>,
     from: Vec<Vec<Direction>>,
@@ -190,8 +190,12 @@ impl Map {
         self.dist(p1.x, p1.y, p2.x, p2.y)
     }
 
-    fn get_dist(&self, x:usize, y: usize) -> Vec<usize> {
-        self.dist[self.conv(x, y)].clone()
+    fn get_dist(&self, x: usize, y: usize) -> &Vec<usize> {
+        &self.dist[self.conv(x, y)]
+    }
+
+    pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
+        self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
     }
 }
 
@@ -243,7 +247,7 @@ mod tests {
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(0, 0));
+        assert_eq!(exp, *map.get_dist(0, 0));
 
         exp = Vec::from([
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
@@ -252,7 +256,7 @@ mod tests {
                 usize::MAX, 2, 3, 4, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(1, 1));
+        assert_eq!(exp, *map.get_dist(1, 1));
 
         exp = Vec::from([
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
@@ -261,7 +265,7 @@ mod tests {
                 usize::MAX, 1, 0, 1, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(3, 2));
+        assert_eq!(exp, *map.get_dist(3, 2));
     }
 
     #[test]

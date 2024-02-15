@@ -43,12 +43,20 @@ impl TurboMatching {
 }
 
 impl Matcher for TurboMatching {
-    fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self {
+    fn new(graph: Vec<Vec<usize>>, _setu: Vec<usize>, _setv: Vec<usize>) -> Self {
         let n: usize = graph.len();
         TurboMatching {
             g: graph,
             vis: vec![false; n],
             mat: vec![-1; n],
+        }
+    }
+
+    fn new_empty() -> Self {
+        TurboMatching {
+            g: Vec::new(),
+            vis: Vec::new(),
+            mat: Vec::new(),
         }
     }
 
@@ -84,8 +92,7 @@ mod tests {
         let mut g: Vec<Vec<usize>> = vec![Vec::new(); 4];
         add_edge(&mut g, 1, 2);
 
-        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g, Vec::new(), Vec::new());
+        let mut matcher = TurboMatching::new(g, Vec::new(), Vec::new());
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -98,8 +105,7 @@ mod tests {
         let mut g: Vec<Vec<usize>> = vec![Vec::new(); 4];
         add_edge(&mut g, 1, 2);
 
-        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g, Vec::new(), Vec::new());
+        let mut matcher = TurboMatching::new(g, Vec::new(), Vec::new());
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -120,10 +126,9 @@ mod tests {
             add_edge(&mut g, e.0, e.1);
         }
 
-        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g, Vec::new(), Vec::new());
+        let mut matcher = TurboMatching::new(g, Vec::new(), Vec::new());
         let got = matcher.solve();
-        let mat = matcher.get_matching();
+        let _mat = matcher.get_matching();
         assert_eq!(got, 8);
     }
 
@@ -140,8 +145,7 @@ mod tests {
             add_edge(&mut g, v, u);
         }
 
-        let mut matcher = TurboMatching{ g: Vec::new(), mat: Vec::new(), vis: Vec::new(), };
-        matcher.init(g, Vec::new(), Vec::new());
+        let mut matcher = TurboMatching::new(g, Vec::new(), Vec::new());
         matcher.solve();
     }
 }

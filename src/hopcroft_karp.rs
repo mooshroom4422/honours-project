@@ -65,8 +65,8 @@ impl HopcroftKarp {
 
 impl Matcher for HopcroftKarp {
     fn new(graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) -> Self {
-        let n = graph.len();
-        let nil = 0;
+        let nil = graph.len();
+        let n = graph.len()+1;
         HopcroftKarp {
             g: graph,
             setu: setu_in,
@@ -79,9 +79,22 @@ impl Matcher for HopcroftKarp {
         }
     }
 
-   fn init(&mut self, graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) {
-        let n = graph.len();
-        let nil = 0;
+    fn new_empty() -> Self {
+        HopcroftKarp {
+            g: Vec::new(),
+            setu: Vec::new(),
+            setv: Vec::new(),
+            pairu: Vec::new(),
+            pairv: Vec::new(),
+            dist: Vec::new(),
+            matching: Vec::new(),
+            NIL: 0,
+        }
+    }
+
+    fn init(&mut self, graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) {
+        let nil = graph.len();
+        let n = graph.len()+1;
         self.g = graph;
         self.setu = setu_in;
         self.setv = setv_in;
@@ -113,10 +126,20 @@ impl Matcher for HopcroftKarp {
 
     fn get_matching(&mut self) -> &Vec<i32> {
         for &u in self.setu.iter() {
-            self.matching[u] = self.pairu[u] as i32;
+            if self.pairu[u] != self.NIL {
+                self.matching[u] = self.pairu[u] as i32;
+            }
+            else {
+                self.matching[u] = -1;
+            }
         }
         for &v in self.setv.iter() {
-            self.matching[v] = self.pairv[v] as i32;
+            if self.pairv[v] != self.NIL {
+                self.matching[v] = self.pairv[v] as i32;
+            }
+            else {
+                self.matching[v] = -1;
+            }
         }
         &self.matching
     }
@@ -146,7 +169,7 @@ mod tests {
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
-        let exp: Vec<i32> = vec![-1, 2, 1, -1];
+        let exp: Vec<i32> = vec![-1, 2, 1, -1, -1];
         assert_eq!(*mat, exp);
     }
 
@@ -162,7 +185,23 @@ mod tests {
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
-        let exp: Vec<i32> = vec![-1, 2, 1, -1];
+        let exp: Vec<i32> = vec![-1, 2, 1, -1, -1];
+        assert_eq!(*mat, exp);
+    }
+
+    #[test]
+    fn small2() {
+        let mut g: Vec<Vec<usize>> = vec![Vec::new(); 5];
+        add_edge(&mut g, 1, 3);
+
+        let setu = vec![1, 2];
+        let setv = vec![3];
+
+        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let got = matcher.solve();
+        let mat = matcher.get_matching();
+        assert_eq!(got, 1);
+        let exp: Vec<i32> = vec![-1, 3, -1, 1, -1, -1];
         assert_eq!(*mat, exp);
     }
 
