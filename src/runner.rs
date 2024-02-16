@@ -1,69 +1,9 @@
-use rand::seq::SliceRandom;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use crate::hopcroft_karp::HopcroftKarp;
 use crate::map::*;
-use crate::matching::{Matcher, makespan_solve};
 use crate::generate_gif::*;
-
-pub trait AgentStrategy {
-    fn pick(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
-}
-
-pub struct MakeSpanHopcroft;
-impl AgentStrategy for MakeSpanHopcroft {
-    fn pick(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
-        let mut res = vec![Direction::None; agents.len()];
-
-        let agents_point = agents.into_iter()
-            .map(|x| x.position)
-            .collect::<Vec<_>>();
-
-        let targets_point = targets.into_iter()
-            .map(|x| x.position)
-            .collect::<Vec<_>>();
-
-        let mut matcher = HopcroftKarp::new_empty();
-        let dd = makespan_solve(map, &agents_point, &targets_point, &mut matcher);
-
-        let matching = matcher.get_matching();
-        for i in 0..agents.len() {
-            if matching[i] == -1 { continue; }
-            let t = (matching[i] as usize)-agents.len();
-            res[i] = map.get_direction(&agents[i].position, &targets[t].position);
-        }
-
-        res
-    }
-}
-
-pub trait TargetStrategy {
-    fn pick(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
-}
-
-pub struct RandomTarget;
-impl TargetStrategy for RandomTarget {
-    fn pick(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
-        let mut res = vec![Direction::None; targets.len()];
-
-        let dirs = Vec::from([Direction::North, Direction::East,
-            Direction::South, Direction::West, Direction::None]);
-        for (idx, target) in targets.iter().enumerate() {
-            if target.timer == 0 {
-                continue;
-            }
-            let mut iter = 0;
-            let mut dir = dirs.choose(&mut rand::thread_rng()).unwrap();
-            while iter < 20 && !map.valid_point(go_direction(target.position, *dir)) {
-                dir = dirs.choose(&mut rand::thread_rng()).unwrap();
-                iter += 1;
-            }
-            res[idx] = *dir;
-        }
-
-        res
-    }
-}
+use crate::agent_strategies::*;
+use crate::target_strategies::*;
 
 pub struct Runner {
     pub map: Map,

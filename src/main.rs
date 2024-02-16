@@ -4,9 +4,13 @@ mod hopcroft_karp;
 mod map;
 mod runner;
 mod generate_gif;
+mod agent_strategies;
+mod target_strategies;
 
 use crate::map::*;
 use crate::runner::*;
+use crate::agent_strategies::*;
+use crate::target_strategies::*;
 
 fn main() {
     let map = Map::new("resources/maps/arena.map");
