@@ -22,6 +22,6 @@ fn main() {
     ]), d_time);
 
     let mut runner = Runner{map, agents, targets, d_time};
-    let took = runner.run(MakeSpanHopcroft, RandomTarget, true, true, "generated/run.gif");
+    let took = runner.run(MakeSpanHopcroft, RandomTarget, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
