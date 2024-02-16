@@ -2,6 +2,7 @@ use super::map::*;
 
 pub trait Matcher {
     fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self;
+    fn new_empty() -> Self;
     fn init(&mut self, graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>);
 
     // returns matching size
@@ -11,7 +12,7 @@ pub trait Matcher {
     fn get_matching(&mut self) -> &Vec<i32>;
 }
 
-fn solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
+pub fn makespan_solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut impl Matcher) -> i32 {
     let mut left: i32 = 0;
     let mut right: i32 = 1_000_000_000;
 
@@ -34,6 +35,9 @@ fn solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut imp
 
         let setu = (0..agents.len()).collect();
         let setv = (agents.len()..agents.len()+targets.len()).collect();
+        // println!("graph: {:?}", graph);
+        // println!("setu: {:?}", setu);
+        // println!("setv: {:?}", setv);
         matcher.init(graph, setu, setv);
         let got = matcher.solve();
         if got == std::cmp::min(n, m) {
@@ -45,7 +49,25 @@ fn solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matcher: &mut imp
         }
     }
 
-    return res;
+    // bringback matcher to state with optimal mid
+    if res != -1 {
+        let mut graph: Vec<Vec<usize>> = vec![Vec::new(); n+m];
+        for (i, agent) in agents.iter().enumerate() {
+            for (j, target) in targets.iter().enumerate() {
+                if map.dist_point(&agent, &target) <= res as usize {
+                    graph[i].push(j+n);
+                    graph[j+n].push(i);
+                }
+            }
+        }
+
+        let setu = (0..agents.len()).collect();
+        let setv = (agents.len()..agents.len()+targets.len()).collect();
+        matcher.init(graph, setu, setv);
+        _ = matcher.solve();
+    }
+
+    res
 }
 
 #[cfg(test)]
@@ -54,7 +76,7 @@ mod tests {
     use crate::turbo::TurboMatching;
     use crate::map::*;
 
-    use super::solve;
+    use super::*;
 
     #[test]
     fn simple() {
@@ -62,7 +84,7 @@ mod tests {
         let targets = vec![Point{ x: 3, y: 3 }];
         let mut matcher = TurboMatching{ g: Vec::new(), vis: Vec::new(), mat: Vec::new(),};
         let map = Map::new("resources/maps/example.map");
-        assert_eq!(solve(&map, &agents, &targets, &mut matcher), 4);
+        assert_eq!(makespan_solve(&map, &agents, &targets, &mut matcher), 4);
     }
 
     #[test]
@@ -80,6 +102,6 @@ mod tests {
             NIL: 0,
         };
         let map = Map::new("resources/maps/example.map");
-        assert_eq!(solve(&map, &agents, &targets, &mut matcher), 3);
+        assert_eq!(makespan_solve(&map, &agents, &targets, &mut matcher), 3);
     }
 }

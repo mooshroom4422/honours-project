@@ -6,7 +6,7 @@ enum Tile {
     Free,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Direction {
     North,
     East,
@@ -15,14 +15,56 @@ pub enum Direction {
     None,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Agent {
+    pub position: Point,
+}
+
+pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
+    let mut res = Vec::new();
+
+    for p in points {
+        res.push(Agent{position: *p});
+    }
+
+    res
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Target {
+    pub position: Point,
+    pub timer: i32,
+}
+
+pub fn targets_from(points: &Vec<Point>, timer: i32) -> Vec<Target> {
+    let mut res = Vec::new();
+
+    for p in points {
+        res.push(Target{position: *p, timer});
+    }
+
+    res
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     pub x: usize,
     pub y: usize,
 }
 
+pub fn go_direction(point: Point, direction: Direction) -> Point {
+    match direction {
+        Direction::North => Point{x: point.x-1, y: point.y},
+        Direction::East => Point{x: point.x, y: point.y+1},
+        Direction::South => Point{x: point.x+1, y: point.y},
+        Direction::West => Point{x: point.x, y: point.y-1},
+        Direction::None => Point{x: point.x, y: point.y},
+    }
+}
+
 pub struct Map {
-    height: usize,
-    width: usize,
+    pub height: usize,
+    pub width: usize,
     map: Vec<Vec<Tile>>,
     dist: Vec<Vec<usize>>,
     from: Vec<Vec<Direction>>,
@@ -149,7 +191,12 @@ impl Map {
     }
 
     fn valid(&self, x: usize, y: usize) -> bool {
+        x >= 0 && x < self.height && y >= 0 && y < self.width &&
         self.map[x][y] == Tile::Free
+    }
+
+    pub fn valid_point(&self, p: Point) -> bool {
+        self.valid(p.x, p.y)
     }
 
     fn dist(&self, fx: usize, fy: usize, tx: usize, ty: usize) -> usize {
@@ -163,8 +210,12 @@ impl Map {
         self.dist(p1.x, p1.y, p2.x, p2.y)
     }
 
-    fn get_dist(&self, x:usize, y: usize) -> Vec<usize> {
-        self.dist[self.conv(x, y)].clone()
+    fn get_dist(&self, x: usize, y: usize) -> &Vec<usize> {
+        &self.dist[self.conv(x, y)]
+    }
+
+    pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
+        self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
     }
 }
 
@@ -216,7 +267,7 @@ mod tests {
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(0, 0));
+        assert_eq!(exp, *map.get_dist(0, 0));
 
         exp = Vec::from([
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
@@ -225,7 +276,7 @@ mod tests {
                 usize::MAX, 2, 3, 4, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(1, 1));
+        assert_eq!(exp, *map.get_dist(1, 1));
 
         exp = Vec::from([
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
@@ -234,7 +285,7 @@ mod tests {
                 usize::MAX, 1, 0, 1, usize::MAX,
                 usize::MAX, usize::MAX, usize::MAX, usize::MAX, usize::MAX,
             ]);
-        assert_eq!(exp, map.get_dist(3, 2));
+        assert_eq!(exp, *map.get_dist(3, 2));
     }
 
     #[test]
