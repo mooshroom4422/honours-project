@@ -1,4 +1,5 @@
 use rand::seq::SliceRandom;
+use std::time::{Duration, Instant};
 
 use crate::hopcroft_karp::HopcroftKarp;
 use crate::map::*;
@@ -75,6 +76,7 @@ impl Runner {
     pub fn run(&mut self, agent_strat: impl AgentStrategy, target_strat: impl TargetStrategy,
             debug_printing: bool, enable_gif: bool, gif_path: &str) -> i32 {
 
+        let start = Instant::now();
         let mut frames: Vec<Vec<u8>> = Vec::new();
         if debug_printing {
             println!("start:");
@@ -124,6 +126,7 @@ impl Runner {
             }
         }
 
+        println!("simulation took: {:?}", start.elapsed());
         turns
     }
 }

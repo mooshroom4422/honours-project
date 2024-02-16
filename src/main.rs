@@ -9,10 +9,19 @@ use crate::map::*;
 use crate::runner::*;
 
 fn main() {
-    let map = Map::new("resources/maps/example.map");
-    let agents = Vec::from([Agent{position: Point{x: 1, y: 1}}]);
-    let targets = Vec::from([Target{position: Point{x: 3, y: 3}, timer: 2}]);
-    let mut runner = Runner{map, agents, targets, d_time: 2};
-    let took = runner.run(MakeSpanHopcroft, RandomTarget, false, true, "generated/run.gif");
+    let map = Map::new("resources/maps/arena.map");
+
+    let d_time = 2;
+    let agents = agents_from(&Vec::from([
+        Point{x: 3, y: 2},
+        Point{x: 3, y: 47},
+    ]));
+    let targets = targets_from(&Vec::from([
+        Point{x: 10, y: 10},
+        Point{x: 47, y: 47},
+    ]), d_time);
+
+    let mut runner = Runner{map, agents, targets, d_time};
+    let took = runner.run(MakeSpanHopcroft, RandomTarget, true, true, "generated/run.gif");
     println!("took: {}", took);
 }

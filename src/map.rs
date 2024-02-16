@@ -20,10 +20,30 @@ pub struct Agent {
     pub position: Point,
 }
 
+pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
+    let mut res = Vec::new();
+
+    for p in points {
+        res.push(Agent{position: *p});
+    }
+
+    res
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Target {
     pub position: Point,
     pub timer: i32,
+}
+
+pub fn targets_from(points: &Vec<Point>, timer: i32) -> Vec<Target> {
+    let mut res = Vec::new();
+
+    for p in points {
+        res.push(Target{position: *p, timer});
+    }
+
+    res
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
