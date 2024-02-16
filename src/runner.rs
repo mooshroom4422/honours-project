@@ -3,6 +3,7 @@ use rand::seq::SliceRandom;
 use crate::hopcroft_karp::HopcroftKarp;
 use crate::map::*;
 use crate::matching::{Matcher, makespan_solve};
+use crate::generate_gif::*;
 
 pub trait AgentStrategy {
     fn pick(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
@@ -25,8 +26,6 @@ impl AgentStrategy for MakeSpanHopcroft {
         let dd = makespan_solve(map, &agents_point, &targets_point, &mut matcher);
 
         let matching = matcher.get_matching();
-        println!("dd: {:?}", dd);
-        println!("matching: {:?}", matching);
         for i in 0..agents.len() {
             if matching[i] == -1 { continue; }
             let t = (matching[i] as usize)-agents.len();
@@ -73,12 +72,17 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn run(&mut self, agent_strat: impl AgentStrategy, target_strat: impl TargetStrategy) {
-        println!("start:");
-        print_board(&self.map, &self.agents, &self.targets);
+    pub fn run(&mut self, agent_strat: impl AgentStrategy, target_strat: impl TargetStrategy,
+            debug_printing: bool, enable_gif: bool, gif_path: &str) -> i32 {
+
+        let mut frames: Vec<Vec<u8>> = Vec::new();
+        if debug_printing {
+            println!("start:");
+            print_board(&self.map, &self.agents, &self.targets);
+        }
         let mut turns = 0;
         while self.targets.len() > 0 {
-            println!("========================");
+            if debug_printing { println!("========================"); }
             let target_dirs = target_strat.pick(&self.map, &self.agents, &self.targets);
             for (idx, dir) in target_dirs.iter().enumerate() {
                 self.targets[idx].position = go_direction(self.targets[idx].position, *dir);
@@ -102,11 +106,25 @@ impl Runner {
 
             turns += 1;
             // debug
-            println!("tg_di: {:?}", target_dirs);
-            println!("ag_di: {:?}", agent_dirs);
-            print_board(&self.map, &self.agents, &self.targets);
+            if debug_printing {
+                println!("tg_di: {:?}", target_dirs);
+                println!("ag_di: {:?}", agent_dirs);
+                print_board(&self.map, &self.agents, &self.targets);
+            }
+            if enable_gif {
+                let frame = generate_frame(&self.map, &self.agents, &self.targets);
+                frames.push(frame);
+            }
         }
-        println!("took: {}", turns);
+
+        if enable_gif {
+            let got = generate_gif(&frames, &self.map, gif_path);
+            if got.is_err() {
+                println!("error saving gif");
+            }
+        }
+
+        turns
     }
 }
 
