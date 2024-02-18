@@ -39,7 +39,8 @@ pub fn agents_random(map: &Map, n: usize) -> Vec<Agent> {
         loop {
             let x = rng.gen_range(0..map.height);
             let y = rng.gen_range(0..map.width);
-            if !res.contains(&Agent{ position: Point{x, y}}) {
+            if !res.contains(&Agent{ position: Point{x, y}}) &&
+                map.valid_point(Point{x, y}) {
                 res.push(Agent{ position: Point{x, y}});
                 break;
             }
@@ -73,7 +74,8 @@ pub fn targets_random(map: &Map, n: usize, timer: i32) -> Vec<Target> {
         loop {
             let x = rng.gen_range(0..map.height);
             let y = rng.gen_range(0..map.width);
-            if !res.contains(&Target{ position: Point{x, y}, timer}) {
+            if !res.contains(&Target{ position: Point{x, y}, timer}) &&
+                map.valid_point(Point{x, y}) {
                 res.push(Target{ position: Point{x, y}, timer});
                 break;
             }
