@@ -30,6 +30,6 @@ fn main() {
     let targets = targets_random(&map, 3, d_time);
 
     let mut runner = Runner{map, agents, targets, d_time};
-    let took = runner.run(MakeSpanHopcroft, RandomTarget, false, true, "generated/run.gif");
+    let took = runner.run(MakeSpanHopcroft, MaximizeMinDist, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
