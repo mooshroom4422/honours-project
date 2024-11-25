@@ -13,7 +13,7 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn run(&mut self, agent_strat: impl AgentStrategy, target_strat: impl TargetStrategy,
+    pub fn run(&mut self, mut agent_strat: impl AgentStrategy, mut target_strat: impl TargetStrategy,
             debug_printing: bool, enable_gif: bool, gif_path: &str) -> i32 {
 
         let start = Instant::now();
@@ -22,8 +22,11 @@ impl Runner {
             println!("start:");
             print_board(&self.map, &self.agents, &self.targets);
         }
+
         let mut turns = 0;
-        while self.targets.len() > 0 {
+        let mut iter = 0;
+        while self.targets.len() > 0 && iter < 110 {
+            iter += 1;
             if debug_printing { println!("========================"); }
             let target_dirs = target_strat.pick(&self.map, &self.agents, &self.targets);
             for (idx, dir) in target_dirs.iter().enumerate() {
@@ -62,7 +65,7 @@ impl Runner {
         if enable_gif {
             let got = generate_gif(&frames, &self.map, gif_path);
             if got.is_err() {
-                println!("error saving gif");
+                println!("error saving gif, make sure that '{}' directory is present", gif_path);
             }
         }
 
