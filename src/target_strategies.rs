@@ -1,5 +1,6 @@
 use rand::seq::SliceRandom;
 use std::collections::HashSet;
+use std::cmp;
 
 use crate::map::*;
 
@@ -170,6 +171,39 @@ impl TargetStrategy for TargetFollowPath {
             }
             res.push(self.paths[idx][self.path_idx[idx]]);
             self.path_idx[idx] += 1;
+        }
+
+        res
+    }
+}
+
+pub struct MaximizeMinDist;
+impl TargetStrategy for MaximizeMinDist {
+    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+        let mut res = vec![Direction::None; targets.len()];
+
+        let dirs = Vec::from([Direction::North, Direction::East,
+            Direction::South, Direction::West]);
+        for (idx, target) in targets.iter().enumerate() {
+            if target.timer == 0 {
+                continue;
+            }
+            let mut best = usize::MAX;
+            for agent in agents {
+                best = cmp::min(best, map.dist_point(&agent.position, &target.position));
+            }
+            for dir in dirs.iter() {
+                let pos = go_direction(target.position, *dir);
+                if !map.valid_point(pos) { continue; }
+                let mut now = usize::MAX;
+                for agent in agents {
+                    now = cmp::min(now, map.dist_point(&agent.position, &pos));
+                }
+                if now > best {
+                    best = now;
+                    res[idx] = *dir;
+                }
+            }
         }
 
         res

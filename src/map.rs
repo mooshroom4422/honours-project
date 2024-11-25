@@ -1,5 +1,6 @@
 use std::{fs, collections::VecDeque};
 use std::cmp;
+use rand::Rng;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tile {
@@ -31,6 +32,25 @@ pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
     res
 }
 
+pub fn agents_random(map: &Map, n: usize) -> Vec<Agent> {
+    let mut res = Vec::new();
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..n {
+        loop {
+            let x = rng.gen_range(0..map.height);
+            let y = rng.gen_range(0..map.width);
+            if !res.contains(&Agent{ position: Point{x, y}}) &&
+                map.valid_point(Point{x, y}) {
+                res.push(Agent{ position: Point{x, y}});
+                break;
+            }
+        }
+    }
+
+    res
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Target {
     pub position: Point,
@@ -53,6 +73,25 @@ pub fn targets_from(points: &Vec<Point>, timer: i32) -> Vec<Target> {
 
     for p in points {
         res.push(Target{position: *p, timer, path: None, idx: 0});
+    }
+
+    res
+}
+
+pub fn targets_random(map: &Map, n: usize, timer: i32) -> Vec<Target> {
+    let mut res = Vec::new();
+    let mut rng = rand::thread_rng();
+
+    for idx in 0..n {
+        loop {
+            let x = rng.gen_range(0..map.height);
+            let y = rng.gen_range(0..map.width);
+            if !res.contains(&Target{ idx, position: Point{x, y}, timer, path: None }) &&
+                map.valid_point(Point{x, y}) {
+                res.push(Target{ idx, position: Point{x, y}, timer, path: None });
+                break;
+            }
+        }
     }
 
     res

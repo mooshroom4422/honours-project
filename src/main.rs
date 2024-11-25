@@ -21,6 +21,7 @@ fn main() {
 
     //let d_time = std::i32::MAX;
     let d_time = 2;
+    /*
     let agents = agents_from(&Vec::from([
         Point{x: 3, y: 2},
         Point{x: 3, y: 47},
@@ -33,6 +34,9 @@ fn main() {
         Point{x: 20, y: 30},
         Point{x: 47, y: 47},
     ]), d_time);
+    */
+    let mut agents = agents_random(&map, 3);
+    let mut targets = targets_random(&map, 3, d_time);
 
     let mut follow_path = TargetFollowPath::new(targets.len(), &map,
         targets.iter().map(|x| x.position).collect(), &mut targets, true, 100);
