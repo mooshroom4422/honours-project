@@ -1,4 +1,5 @@
 use std::{fs, collections::VecDeque};
+use std::cmp;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tile {
@@ -30,17 +31,28 @@ pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
     res
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Target {
     pub position: Point,
     pub timer: i32,
+    pub path: Option<Vec<Point>>,
+    pub idx: usize,
+}
+
+impl Target {
+    // remember about timer: d
+    pub fn at_time(&self, time: usize) -> Point {
+        assert!(self.path.is_some());
+        let path: &Vec<Point> = self.path.as_ref().unwrap();
+        path[cmp::min(time, path.len()-1)].clone()
+    }
 }
 
 pub fn targets_from(points: &Vec<Point>, timer: i32) -> Vec<Target> {
     let mut res = Vec::new();
 
     for p in points {
-        res.push(Target{position: *p, timer});
+        res.push(Target{position: *p, timer, path: None, idx: 0});
     }
 
     res
@@ -62,6 +74,7 @@ pub fn go_direction(point: Point, direction: Direction) -> Point {
     }
 }
 
+#[derive(Clone)]
 pub struct Map {
     pub height: usize,
     pub width: usize,
@@ -191,8 +204,15 @@ impl Map {
     }
 
     fn valid(&self, x: usize, y: usize) -> bool {
-        x >= 0 && x < self.height && y >= 0 && y < self.width &&
-        self.map[x][y] == Tile::Free
+        x < self.height && y < self.width && self.map[x][y] == Tile::Free
+    }
+
+    pub fn valid_direction(&self, p: Point, dir: Direction) -> bool {
+        if p.x == 0 && dir == Direction::North { false }
+        else if p.y == self.width && dir == Direction::East { false }
+        else if p.x == self.height && dir == Direction::South { false }
+        else if p.y == 0 && dir == Direction::West { false }
+        else { true }
     }
 
     pub fn valid_point(&self, p: Point) -> bool {

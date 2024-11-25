@@ -38,6 +38,7 @@ pub fn makespan_solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matc
         // println!("graph: {:?}", graph);
         // println!("setu: {:?}", setu);
         // println!("setv: {:?}", setv);
+        // println!("matching: {:?}", matcher.get_matching());
         matcher.init(graph, setu, setv);
         let got = matcher.solve();
         if got == std::cmp::min(n, m) {
