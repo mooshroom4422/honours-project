@@ -4,6 +4,13 @@ use std::cmp;
 
 use crate::map::*;
 
+#[allow(dead_code)]
+pub enum TargetStrategies {
+    RandomTarget,
+    MaximizeMinDist,
+    TargetFollowPath,
+}
+
 pub trait TargetStrategy {
     fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
 }
@@ -21,7 +28,7 @@ impl TargetStrategy for RandomTarget {
             }
             let mut iter = 0;
             let mut dir = dirs.choose(&mut rand::thread_rng()).unwrap();
-            while iter < 20 && !map.valid_point(go_direction(target.position, *dir)) {
+            while iter < 20 && !map.valid_point(&go_direction(target.position, *dir)) {
                 dir = dirs.choose(&mut rand::thread_rng()).unwrap();
                 iter += 1;
             }
@@ -43,7 +50,7 @@ pub struct TargetFollowPath {
 impl TargetFollowPath {
     pub fn new(n: usize,  map: &Map, starting_points: Vec<Point>, targets: &mut Vec<Target>,
                generate: bool, len: i32) -> Self {
-        let mut res = TargetFollowPath{
+        let mut res = TargetFollowPath {
             paths: Vec::new(),
             path_idx: vec![0; n],
             starting_points: Vec::new(),
@@ -68,7 +75,7 @@ impl TargetFollowPath {
             self.generate_path(i, len, map, self.starting_points[i], target.timer);
             self.generate_path_target(map, i, self.starting_points[i], target);
         }
-        //println!("{:?}", targets);
+        // println!("{:?}", targets);
     }
 
     fn is_blocked(&self, pt: &Point, time: usize) -> bool {
@@ -90,7 +97,7 @@ impl TargetFollowPath {
             let mut iter = 0;
             let mut dir = dirs.choose(&mut rand::thread_rng()).unwrap();
             if time_now == 0 { iter = std::i32::MAX; }
-            while iter < 20 && (!map.valid_point(go_direction(position, *dir))
+            while iter < 20 && (!map.valid_point(&go_direction(position, *dir))
                 || self.is_blocked(&go_direction(position, *dir), (i+1) as usize)) {
 
                 dir = dirs.choose(&mut rand::thread_rng()).unwrap();
@@ -98,7 +105,7 @@ impl TargetFollowPath {
             }
             if iter >= 20 { dir = &Direction::None; }
             // TODO: debug?
-            if !map.valid_point(go_direction(position, *dir)) {
+            if !map.valid_point(&go_direction(position, *dir)) {
                 println!("{:?}, {:?}, {:?}", position, *dir, iter);
                 panic!();
             }
@@ -125,7 +132,7 @@ impl TargetFollowPath {
             }
             position_now = go_direction(position_now, self.paths[idx][self.path_idx[idx]]);
             // TODO: debug?
-            if !map.valid_point(position_now) {
+            if !map.valid_point(&position_now) {
                 println!("{:?}, {:?}", position_now, self.path_idx[idx]);
                 panic!();
             }
@@ -159,8 +166,12 @@ impl TargetStrategy for TargetFollowPath {
     fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = Vec::new();
 
+        // println!("{:?}", targets);
+        // println!("{:?}", self.paths);
+        // println!("{:?}", self.path_idx);
         for target in targets.iter() {
             let idx = target.idx;
+            //println!("{}", idx);
             if self.path_idx[idx] >= self.paths[idx].len() {
                 res.push(Direction::None);
                 continue;
@@ -194,7 +205,7 @@ impl TargetStrategy for MaximizeMinDist {
             }
             for dir in dirs.iter() {
                 let pos = go_direction(target.position, *dir);
-                if !map.valid_point(pos) { continue; }
+                if !map.valid_point(&pos) { continue; }
                 let mut now = usize::MAX;
                 for agent in agents {
                     now = cmp::min(now, map.dist_point(&agent.position, &pos));

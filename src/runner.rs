@@ -13,8 +13,8 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn run(&mut self, mut agent_strat: impl AgentStrategy, mut target_strat: impl TargetStrategy,
-            debug_printing: bool, enable_gif: bool, gif_path: &str) -> i32 {
+    pub fn run(&mut self, mut agent_strat: Box<dyn AgentStrategy>, mut target_strat: Box<dyn TargetStrategy>,
+            debug_printing: bool, enable_failsafe: bool, enable_gif: bool, print_res: bool, gif_path: &str) -> i32 {
 
         let start = Instant::now();
         let mut frames: Vec<Vec<u8>> = Vec::new();
@@ -30,7 +30,8 @@ impl Runner {
             if debug_printing { println!("========================"); }
             let target_dirs = target_strat.pick(&self.map, &self.agents, &self.targets);
             for (idx, dir) in target_dirs.iter().enumerate() {
-                self.targets[idx].position = go_direction(self.targets[idx].position, *dir);
+                //println!("trying: {:?} {:?} at {}", self.targets[idx].position, *dir, iter);
+                self.targets[idx].position = go_direction(self.targets[idx].position, *dir); // TODO: panics here
                 if *dir == Direction::None {
                     self.targets[idx].timer = self.d_time;
                 }
@@ -42,6 +43,15 @@ impl Runner {
             let agent_dirs = agent_strat.pick(&self.map, &self.agents, &self.targets);
             for (idx, dir) in agent_dirs.iter().enumerate() {
                 self.agents[idx].position = go_direction(self.agents[idx].position, *dir);
+            }
+
+            if enable_failsafe {
+                // check if agent positions are unique
+
+                // check if target positions are unique
+
+                // check if all agents are on tiles (not on wall nor outside the grid)
+
             }
 
             self.targets = self.targets.clone()
@@ -69,36 +79,10 @@ impl Runner {
             }
         }
 
-        println!("simulation took: {:?}", start.elapsed());
+        if print_res {
+            println!("simulation took: {:?}", start.elapsed());
+        }
         turns
     }
 }
 
-fn print_board(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) {
-    for x in 0..map.height {
-        for y in 0..map.height {
-            let ag = agents.into_iter()
-                .any(|f| f.position == Point{x, y});
-            let tr = targets.into_iter()
-                .any(|f| f.position == Point{x, y});
-            if ag && tr {
-                print!("F");
-            }
-            else if ag {
-                print!("A");
-            }
-            else if tr {
-                print!("T");
-            }
-            else if map.valid_point(Point{x, y}){
-                print!(".");
-            }
-            else {
-                print!("X");
-            }
-        }
-        print!("\n");
-    }
-    println!("agents: {:?}", agents);
-    println!("targets: {:?}", targets);
-}

@@ -3,6 +3,16 @@ use crate::map::*;
 use crate::matching::{Matcher, makespan_solve};
 use crate::flow::MaxFlow;
 
+#[allow(dead_code)]
+#[derive(PartialEq, Debug)]
+pub enum AgentStrategies {
+    MakeSpanHopcroft,
+    NoCollisionSingle,
+    CollisionAssigned,
+    CollisionFree,
+    NoCollisionFree,
+}
+
 pub trait AgentStrategy {
     fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
 }
@@ -194,6 +204,9 @@ pub struct NoCollisionFree {
 }
 
 impl NoCollisionFree {
+    // grid and two filters
+    const LAYERS: i32 = 3;
+
     pub fn new() -> Self {
         NoCollisionFree {
             height: -1,
@@ -204,12 +217,36 @@ impl NoCollisionFree {
         }
     }
 
-    fn conv_expl(&self, time: i32, x: i32, y: i32) -> i32 {
-        return time*self.width*self.height+x*self.width+y;
+    fn conv_expl(&self, layer: i32, x: i32, y: i32) -> i32 {
+        return layer*self.width*self.height*Self::LAYERS+(y*self.width+x);
     }
 
-    fn conv(&self, time: i32, pnt: &Point) -> i32 {
-        return self.conv_expl(time, pnt.x as i32, pnt.y as i32);
+    fn conv(&self, layer: i32, pnt: &Point) -> i32 {
+        return self.conv_expl(layer, pnt.x as i32, pnt.y as i32);
+    }
+
+    fn conv_edge_expl(&self, layer: i32, x: i32, y: i32, dir: &Direction) -> i32 {
+        let cell = self.conv_expl(layer, x, y);
+        // no move -> special 3rd, or just skip filter
+        // e, s -> normal
+        // w, n -> move back and create edge
+        // num edges -> 3n
+        if *dir == Direction::None { return self.conv_expl(layer, x, y); }
+        else if *dir == Direction::East || *dir == Direction::South {
+            let mut mv = 1;
+            if *dir == Direction::South { mv = 2; }
+            return self.conv_expl(layer, x, y) + mv;
+        }
+        else {
+            let mut tmp = Point { x: x as usize, y: y as usize };
+            tmp = go_direction(tmp, Map::reverse_direction(dir));
+            return self.conv_edge(layer, &tmp, &Map::reverse_direction(dir));
+        }
+    }
+
+    fn conv_edge(&self, layer: i32, pnt: &Point, dir: &Direction) -> i32 {
+        return layer*self.width*self.height*Self::LAYERS +
+            self.conv_edge_expl(layer, pnt.x as i32, pnt.y as i32, dir);
     }
 
     fn reconv_point(&self, time: i32, pos: i32) -> Point {
@@ -237,17 +274,19 @@ impl NoCollisionFree {
         }
 
         for timer in 0..mid {
-            for x in 0..self.height {
-                for y in 0..self.width {
+            for x in 0..self.width {
+                for y in 0..self.height {
                     let pnt = Point{x: x as usize, y: y as usize};
                     for dir in directions.iter() {
                         if !map.valid_direction(pnt, *dir) { continue; }
                         let nxt = go_direction(pnt, *dir);
-                        if !map.valid_point(nxt) { continue; }
-                        flow.add_edge(self.conv(2*timer, &pnt), self.conv(2*timer+1, &nxt), 1);
+                        if !map.valid_point(&nxt) { continue; }
+                        let conv_edge = self.conv_edge(Self::LAYERS*timer+1, &pnt, dir);
+                        flow.add_edge(self.conv(Self::LAYERS*timer, &pnt), conv_edge, 1);
+                        flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &pnt), 1);
                     }
-                    // filter
-                    flow.add_edge(self.conv(2*timer+1, &pnt), self.conv(2*timer+2, &pnt), 1);
+                    // cell filter
+                    flow.add_edge(self.conv(Self::LAYERS*timer+2, &pnt), self.conv(Self::LAYERS*timer+3, &pnt), 1);
                 }
             }
         }
@@ -256,7 +295,7 @@ impl NoCollisionFree {
             //println!("{:?} {} {:?}", &target.at_time(mid as usize),
             //         self.conv(2*mid, &target.at_time(mid as usize)),
             //         self.reconv_point(2*mid, self.conv(2*mid, &target.at_time(mid as usize))));
-            flow.add_edge(self.conv(2*mid, &target.at_time(mid as usize)), sink, 1);
+            flow.add_edge(self.conv(Self::LAYERS*mid, &target.at_time(mid as usize)), sink, 1);
         }
 
     }

@@ -6,6 +6,7 @@ const INF: usize = usize::MAX;
 
 // https://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm
 #[allow(non_snake_case)]
+#[derive(Clone)]
 pub struct HopcroftKarp {
     pub g: Vec<Vec<usize>>,
     pub setu: Vec<usize>,

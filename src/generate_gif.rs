@@ -5,10 +5,6 @@ use std::borrow::Cow;
 
 use crate::map::*;
 
-fn conv(x: usize, y: usize, h: usize) -> usize {
-    y*h+x
-}
-
 // 0 -> empty (white)
 // 1 -> wall (black)
 // 2 -> agent (blue)
@@ -16,8 +12,8 @@ fn conv(x: usize, y: usize, h: usize) -> usize {
 // 4 -> agent and target (purple) (anomaly, shouldnt happened)
 pub fn generate_frame(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<u8> {
     let mut frame = vec![1; map.height*map.width];
-    for x in 0..map.height {
-        for y in 0..map.width {
+    for y in (0..map.height).rev() {
+        for x in 0..map.width {
             let mut c: u8 = 1;
             let ag = agents.into_iter()
                 .any(|f| f.position == Point{x, y});
@@ -32,10 +28,11 @@ pub fn generate_frame(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> 
             else if tr {
                 c = 3;
             }
-            else if map.valid_point(Point{x, y}){
+            else if map.valid_point(&Point{x, y}){
                 c = 0;
             }
-            frame[conv(x, y, map.height)] = c;
+            frame[map.conv(x, map.height-y-1)] = c;
+
         }
     }
 
