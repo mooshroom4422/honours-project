@@ -19,6 +19,7 @@ use crate::flow::*;
 use crate::bench::*;
 use rand::prelude::*;
 
+/*
 fn main() {
 
     let maps = vec![
@@ -66,32 +67,26 @@ fn main() {
 
     }
 }
+*/
 
-/*
 fn main() {
-    let map = Map::new("resources/maps/arena.map");
+    let map = Map::new("resources/maps/tunnel.map");
 
-    //let d_time = std::i32::MAX;
-    let d_time = 2;
-    /*
+    let d_time = std::i32::MAX;
+    // let d_time = 2;
     let agents = agents_from(&Vec::from([
-        Point{x: 3, y: 2},
-        Point{x: 3, y: 47},
-        Point{x: 10, y: 30},
-        Point{x: 30, y: 10},
+        Point{x: 1, y: 1},
+        Point{x: 1, y: 3},
     ]));
     let mut targets = targets_from(&Vec::from([
-        Point{x: 10, y: 10},
-        Point{x: 30, y: 20},
-        Point{x: 20, y: 30},
-        Point{x: 47, y: 47},
+        Point{x: 27, y: 1},
+        Point{x: 27, y: 3},
     ]), d_time);
-    */
-    let mut agents = agents_random(&map, 3);
-    let mut targets = targets_random(&map, 3, d_time);
+    // let mut agents = agents_random(&map, 3);
+    // let mut targets = targets_random(&map, 3, d_time);
 
     let mut follow_path = TargetFollowPath::new(targets.len(), &map,
-        targets.iter().map(|x| x.position).collect(), &mut targets, true, 100);
+        targets.iter().map(|x| x.position).collect(), &mut targets, true, 0);
 
     let perm = vec![1, 3, 2, 0];
     // let mut agent_strat = CollisionAssigned::new();
@@ -106,11 +101,10 @@ fn main() {
     //agent_strat.prep(&map, &agents, &targets, &mut matcher);
 
     let mut runner = Runner{map: map.clone(), agents, targets, d_time};
-    let took = runner.run(agent_strat, follow_path, false, true, "generated/run.gif");
+    let took = runner.run(Box::new(agent_strat), Box::new(follow_path), false, false, true, false, "generated/run.gif");
     //let took = runner.run(MakeSpanHopcroft, follow_path, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
-*/
 
 /*
 fn main() {

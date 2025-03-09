@@ -278,12 +278,13 @@ impl NoCollisionFree {
                 for y in 0..self.height {
                     let pnt = Point{x: x as usize, y: y as usize};
                     for dir in directions.iter() {
-                        if !map.valid_direction(pnt, *dir) { continue; }
+                        if !map.valid_point(&pnt) || !map.valid_direction(pnt, *dir) { continue; }
                         let nxt = go_direction(pnt, *dir);
                         if !map.valid_point(&nxt) { continue; }
+                        // println!("trying: {:?} {:?} -> {:?} {:?}", pnt, *dir, nxt, nxt);
                         let conv_edge = self.conv_edge(Self::LAYERS*timer+1, &pnt, dir);
                         flow.add_edge(self.conv(Self::LAYERS*timer, &pnt), conv_edge, 1);
-                        flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &pnt), 1);
+                        flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &pnt), 1); // zle double edges
                     }
                     // cell filter
                     flow.add_edge(self.conv(Self::LAYERS*timer+2, &pnt), self.conv(Self::LAYERS*timer+3, &pnt), 1);
