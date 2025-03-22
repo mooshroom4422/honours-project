@@ -1,8 +1,8 @@
 use super::map::*;
 
 pub trait Matcher {
-    fn new(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self;
-    fn new_empty() -> Self;
+    fn new_from_graph(graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>) -> Self;
+    fn new() -> Self;
     fn init(&mut self, graph: Vec<Vec<usize>>, setu: Vec<usize>, setv: Vec<usize>);
 
     // returns matching size

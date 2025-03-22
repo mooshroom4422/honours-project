@@ -1,4 +1,4 @@
-use crate::{agent_strategies::*, flow::*, hopcroft_karp::HopcroftKarp, map::*, matching::*, runner::*, target_strategies::*};
+use crate::{agent_strategies::*, flow::*, hopcroft_karp::HopcroftKarp, map::*, matching::*, runner::*, target_strategies::*, TurboMatching};
 use std::time::Instant;
 use rand::{rngs::ThreadRng, Rng};
 use tqdm::tqdm;
@@ -60,6 +60,7 @@ impl TargetStrategyTemplate {
 pub struct BenchmarkResult {
     pub avg_length: f64,
     pub avg_time: f64,
+    pub all_results: Vec<u64>,
 }
 
 fn sample(map: &Map, so_far: &Vec<Point>, lu: &Point, rd: &Point, rng: &mut ThreadRng) -> Result<Point, String> {
@@ -86,18 +87,14 @@ fn sample(map: &Map, so_far: &Vec<Point>, lu: &Point, rd: &Point, rng: &mut Thre
     }
 }
 
-pub fn bench(map: Map, num_runs: i32, d_time: i32,
-             rng: &mut ThreadRng, num_agents: usize, num_targets: usize,
-             agent_rectangles: Vec<(Point, Point)>,
-             target_rectangles: Vec<(Point, Point)>,
-             agent_strat_template: AgentStrategyTemplate,
-             target_strat_template: TargetStrategyTemplate,
-             debug_print: bool
-            ) -> Result<BenchmarkResult, String> {
+pub fn gen_set(map: &Map, nruns: usize, d_time: i32, num_agents: usize, num_targets: usize, rng: &mut ThreadRng,
+               agent_rectangles: Vec<(Point, Point)>, target_rectangles: Vec<(Point, Point)>,
+              ) -> Result<(Vec<Vec<Agent>>, Vec<Vec<Target>>), String> {
 
-    let mut sum_length: u64 = 0;
-    let mut sum_time: u128 = 0;
-    for iter in tqdm(0..num_runs) {
+    let mut all_agents: Vec<Vec<Agent>> = Vec::new();
+    let mut all_targets: Vec<Vec<Target>> = Vec::new();
+
+    for _iter in 0..nruns {
         let mut generated_so_far: Vec<Point> = Vec::new();
         let mut agent_points: Vec<Point> = Vec::new();
         for i in 0..num_agents {
@@ -140,20 +137,33 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32,
             }
         }
 
-        let mut agents = agents_from(&agent_points);
-        let mut targets = targets_from(&target_points, 100000);
+        all_agents.push(agents_from(&agent_points));
+        all_targets.push(targets_from(&target_points, d_time as i32));
+    }
 
-        // target start should be excluded from time
-        let target_strat = target_strat_template.construct(&map, &agents, &mut targets);
+    Ok((all_agents, all_targets))
+}
 
+pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, all_targets: Vec<Vec<Target>>,
+             agent_strat_template: AgentStrategyTemplate, target_strat: &mut Vec<Box<dyn TargetStrategy>>,
+             debug_print: bool, collect_individual: bool
+            ) -> Result<BenchmarkResult, String> {
+
+    let mut sum_length: u64 = 0;
+    let mut sum_time: u128 = 0;
+    let mut all_results = Vec::new();
+    for run_id in tqdm(0..num_runs as usize) {
         let start_time = Instant::now();
+
+        let agents = all_agents[run_id].clone();
+        let targets = all_targets[run_id].clone();
 
         let agent_strat = agent_strat_template.construct(&map, &agents, &targets);
 
         let mut runner = Runner {
             map: map.clone(),
-            agents: agents.clone(),
-            targets: targets.clone(),
+            agents: agents,
+            targets: targets,
             d_time
         };
 
@@ -161,12 +171,16 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32,
         // println!("{:?}", agents);
         // println!("{:?}", targets);
 
-        let took_steps = runner.run(agent_strat, target_strat, false, false, false, debug_print, "") as u64;
+        let took_steps = runner.run(agent_strat, &mut target_strat[run_id], false, false, false, debug_print, "") as u64;
 
         //println!("run: {} -> {:?} {:?} {:?}", iter, num_agents, num_targets, took_steps);
 
         sum_time += start_time.elapsed().as_millis();
         sum_length += took_steps;
+
+        if collect_individual {
+            all_results.push(took_steps);
+        }
     }
 
     let avg_length: f64 = (sum_length as f64)/(num_runs as f64);
@@ -180,10 +194,7 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32,
         BenchmarkResult {
             avg_length,
             avg_time,
+            all_results,
         }
     );
 }
-
-// TODO: there is still some error in path generation, since
-// map.rs:108 should not happen
-// and issues with d_time

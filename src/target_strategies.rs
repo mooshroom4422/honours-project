@@ -13,6 +13,7 @@ pub enum TargetStrategies {
 
 pub trait TargetStrategy {
     fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
+    fn flush(&mut self);
 }
 
 pub struct RandomTarget;
@@ -38,8 +39,11 @@ impl TargetStrategy for RandomTarget {
 
         res
     }
+
+    fn flush(&mut self) {}
 }
 
+#[derive(Clone)]
 pub struct TargetFollowPath {
     paths: Vec<Vec<Direction>>,
     path_idx: Vec<usize>,
@@ -186,6 +190,12 @@ impl TargetStrategy for TargetFollowPath {
 
         res
     }
+
+    fn flush(&mut self) {
+        for x in &mut self.path_idx {
+            *x = 0;
+        }
+    }
 }
 
 pub struct MaximizeMinDist;
@@ -219,4 +229,6 @@ impl TargetStrategy for MaximizeMinDist {
 
         res
     }
+
+    fn flush(&mut self) {}
 }

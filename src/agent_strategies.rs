@@ -4,7 +4,7 @@ use crate::matching::{Matcher, makespan_solve};
 use crate::flow::MaxFlow;
 
 #[allow(dead_code)]
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum AgentStrategies {
     MakeSpanHopcroft,
     NoCollisionSingle,
@@ -30,7 +30,7 @@ impl AgentStrategy for MakeSpanHopcroft {
             .map(|x| x.position)
             .collect::<Vec<_>>();
 
-        let mut matcher = HopcroftKarp::new_empty();
+        let mut matcher = HopcroftKarp::new();
         let _dd = makespan_solve(map, &agents_point, &targets_point, &mut matcher);
 
         let matching = matcher.get_matching();
@@ -87,6 +87,7 @@ impl AgentStrategy for NoCollisionSingle {
     }
 }
 
+#[derive(Clone)]
 pub struct CollisionAssigned {
     ready: bool,
     goto: Vec<Point>,
@@ -106,7 +107,7 @@ impl CollisionAssigned {
             single_strat.prep(map, agent, &targets[permutation[idx]]);
             assert!(single_strat.expected_time != -1);
             self.goto[idx] = single_strat.goto;
-            //println!("{}: {:?}", idx, single_strat.expected_time);
+            println!("{}: {:?}", idx, single_strat.expected_time);
         }
         self.ready = true;
     }
@@ -174,7 +175,7 @@ impl CollisionFree {
             }
         }
 
-        //println!("permutation: {:?}", perm);
+        println!("permutation: {:?}", perm);
 
         // get the result from CollisionAssigned using found permutation
         let mut assigned = CollisionAssigned::new();
@@ -206,6 +207,8 @@ pub struct NoCollisionFree {
 impl NoCollisionFree {
     // grid and two filters
     const LAYERS: i32 = 3;
+    // number of edges that we map on egdes filter
+    const DIRECTIONS: i32 = 3;
 
     pub fn new() -> Self {
         NoCollisionFree {
@@ -218,7 +221,7 @@ impl NoCollisionFree {
     }
 
     fn conv_expl(&self, layer: i32, x: i32, y: i32) -> i32 {
-        return layer*self.width*self.height*Self::LAYERS+(y*self.width+x);
+        return layer*self.width*self.height*Self::DIRECTIONS+(y*self.width+x);
     }
 
     fn conv(&self, layer: i32, pnt: &Point) -> i32 {
@@ -231,11 +234,11 @@ impl NoCollisionFree {
         // e, s -> normal
         // w, n -> move back and create edge
         // num edges -> 3n
-        if *dir == Direction::None { return self.conv_expl(layer, x, y); }
+        if *dir == Direction::None { return cell; }
         else if *dir == Direction::East || *dir == Direction::South {
             let mut mv = 1;
             if *dir == Direction::South { mv = 2; }
-            return self.conv_expl(layer, x, y) + mv;
+            return cell + mv;
         }
         else {
             let mut tmp = Point { x: x as usize, y: y as usize };
@@ -245,8 +248,7 @@ impl NoCollisionFree {
     }
 
     fn conv_edge(&self, layer: i32, pnt: &Point, dir: &Direction) -> i32 {
-        return layer*self.width*self.height*Self::LAYERS +
-            self.conv_edge_expl(layer, pnt.x as i32, pnt.y as i32, dir);
+        return self.conv_edge_expl(layer, pnt.x as i32, pnt.y as i32, dir);
     }
 
     fn reconv_point(&self, time: i32, pos: i32) -> Point {
@@ -266,12 +268,11 @@ impl NoCollisionFree {
         flow.reset();
         flow.set_source(source);
         flow.set_sink(sink);
+        println!("connecting source to agents:");
         for agent in agents.iter() {
             flow.add_edge(source, self.conv(0, &agent.position), 1);
         }
-        for target in targets.iter() {
-            flow.add_edge(self.conv(0, &target.position), sink, 1);
-        }
+        println!("======");
 
         for timer in 0..mid {
             for x in 0..self.width {
@@ -281,22 +282,28 @@ impl NoCollisionFree {
                         if !map.valid_point(&pnt) || !map.valid_direction(pnt, *dir) { continue; }
                         let nxt = go_direction(pnt, *dir);
                         if !map.valid_point(&nxt) { continue; }
-                        // println!("trying: {:?} {:?} -> {:?} {:?}", pnt, *dir, nxt, nxt);
+                        println!("trying: pnt={:?} {:?} -> nxt={:?}", pnt, *dir, nxt);
                         let conv_edge = self.conv_edge(Self::LAYERS*timer+1, &pnt, dir);
                         flow.add_edge(self.conv(Self::LAYERS*timer, &pnt), conv_edge, 1);
                         flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &pnt), 1); // zle double edges
                     }
                     // cell filter
+                    println!("cell filter: timer={} x={} y={}", timer, x, y);
                     flow.add_edge(self.conv(Self::LAYERS*timer+2, &pnt), self.conv(Self::LAYERS*timer+3, &pnt), 1);
                 }
             }
         }
 
+        let mut collector = sink-1; // assuming sink is the smallest node (in terms of id)
         for target in targets.iter() {
             //println!("{:?} {} {:?}", &target.at_time(mid as usize),
             //         self.conv(2*mid, &target.at_time(mid as usize)),
             //         self.reconv_point(2*mid, self.conv(2*mid, &target.at_time(mid as usize))));
-            flow.add_edge(self.conv(Self::LAYERS*mid, &target.at_time(mid as usize)), sink, 1);
+            flow.add_edge(collector, sink, 1);
+            for time in 0..mid+1 {
+                flow.add_edge(self.conv(Self::LAYERS*time, &target.at_time(time as usize)), collector, 1);
+            }
+            collector -= 1;
         }
 
     }
@@ -313,7 +320,11 @@ impl NoCollisionFree {
         let mut res: i32 = -1;
 
         while left <= right {
-            let mid = left+(right-left)/2;
+            // let mid = left+(right-left)/2;
+            let mid = 3;
+            println!("mid={}", mid);
+            println!("agents={:?}", agents);
+            println!("targets={:?}", targets);
 
             self.construct(flow, sink, source, mid, map, agents, targets);
             println!("finished construction");
@@ -327,6 +338,8 @@ impl NoCollisionFree {
             }
 
             println!("finished: {}, {}, l:{}, r:{}", mid, res, left, right);
+            println!("flow={}", flow.get_flow());
+            panic!();
         }
 
         println!("res: {}", res);

@@ -65,7 +65,7 @@ impl HopcroftKarp {
 }
 
 impl Matcher for HopcroftKarp {
-    fn new(graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) -> Self {
+    fn new_from_graph(graph: Vec<Vec<usize>>, setu_in: Vec<usize>, setv_in: Vec<usize>) -> Self {
         let nil = graph.len();
         let n = graph.len()+1;
         HopcroftKarp {
@@ -80,7 +80,7 @@ impl Matcher for HopcroftKarp {
         }
     }
 
-    fn new_empty() -> Self {
+    fn new() -> Self {
         HopcroftKarp {
             g: Vec::new(),
             setu: Vec::new(),
@@ -166,7 +166,7 @@ mod tests {
         let setu = vec![1];
         let setv = vec![2];
 
-        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let mut matcher = HopcroftKarp::new_from_graph(g, setu, setv);
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -182,7 +182,7 @@ mod tests {
         let setu = vec![1];
         let setv = vec![2];
 
-        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let mut matcher = HopcroftKarp::new_from_graph(g, setu, setv);
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -198,7 +198,7 @@ mod tests {
         let setu = vec![1, 2];
         let setv = vec![3];
 
-        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let mut matcher = HopcroftKarp::new_from_graph(g, setu, setv);
         let got = matcher.solve();
         let mat = matcher.get_matching();
         assert_eq!(got, 1);
@@ -223,7 +223,7 @@ mod tests {
         let setu = (1..11).collect();
         let setv = (11..21).collect();
 
-        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let mut matcher = HopcroftKarp::new_from_graph(g, setu, setv);
         let got = matcher.solve();
         let _mat = matcher.get_matching();
         assert_eq!(got, 8);
@@ -245,7 +245,7 @@ mod tests {
         let setu = (0..maxn).collect();
         let setv = (maxn..2*maxn).collect();
 
-        let mut matcher = HopcroftKarp::new(g, setu, setv);
+        let mut matcher = HopcroftKarp::new_from_graph(g, setu, setv);
         matcher.solve();
     }
 }

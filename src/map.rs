@@ -20,6 +20,7 @@ pub enum Direction {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Agent {
     pub position: Point,
+    pub active: bool,
 }
 
 pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
