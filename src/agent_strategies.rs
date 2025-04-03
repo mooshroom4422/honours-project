@@ -22,21 +22,22 @@ impl AgentStrategy for MakeSpanHopcroft {
     fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = vec![Direction::None; agents.len()];
 
-        let agents_point = agents.into_iter()
+        let agents_points = agents.into_iter()
+            .filter(|x| x.active)
             .map(|x| x.position)
             .collect::<Vec<_>>();
 
-        let targets_point = targets.into_iter()
+        let targets_points = targets.into_iter()
             .map(|x| x.position)
             .collect::<Vec<_>>();
 
         let mut matcher = HopcroftKarp::new();
-        let _dd = makespan_solve(map, &agents_point, &targets_point, &mut matcher);
+        let _dd = makespan_solve(map, &agents_points, &targets_points, &mut matcher);
 
         let matching = matcher.get_matching();
-        for i in 0..agents.len() {
+        for i in 0..agents_points.len() {
             if matching[i] == -1 { continue; }
-            let t = (matching[i] as usize)-agents.len();
+            let t = (matching[i] as usize)-agents_points.len();
             res[i] = map.get_direction(&agents[i].position, &targets[t].position);
         }
 
@@ -98,23 +99,24 @@ impl CollisionAssigned {
         CollisionAssigned { ready: false, goto: Vec::new() }
     }
 
-    pub fn prep(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>, permutation: &Vec<usize>) {
+    pub fn prep(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>, permutation: &Vec<usize>) {
         assert!(agents.len() == targets.len());
         assert!(agents.len() == permutation.len());
         self.goto = vec![Point{x:0, y:0}; agents.len()];
-        for (idx, agent) in agents.iter().enumerate() {
+        for (idx, agent) in agents.iter_mut().enumerate() {
             let mut single_strat = NoCollisionSingle::new();
             single_strat.prep(map, agent, &targets[permutation[idx]]);
             assert!(single_strat.expected_time != -1);
             self.goto[idx] = single_strat.goto;
-            println!("{}: {:?}", idx, single_strat.expected_time);
+            agent.targets = permutation[idx] as i32;
+            // println!("{}: {:?}", idx, single_strat.expected_time);
         }
         self.ready = true;
     }
 }
 
 impl AgentStrategy for CollisionAssigned {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, _targets: &Vec<Target>) -> Vec<Direction> {
         assert!(self.ready);
         let mut res = vec![Direction::None; agents.len()];
         for (idx, agent) in agents.iter().enumerate() {
@@ -134,7 +136,7 @@ impl CollisionFree {
         CollisionFree { ready: false, goto: Vec::new() }
     }
 
-    pub fn prep(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>, matcher: &mut impl Matcher) {
+    pub fn prep(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>, matcher: &mut impl Matcher) {
         assert!(agents.len() == targets.len());
 
         // find permuatation
@@ -175,7 +177,7 @@ impl CollisionFree {
             }
         }
 
-        println!("permutation: {:?}", perm);
+        // println!("permutation: {:?}", perm);
 
         // get the result from CollisionAssigned using found permutation
         let mut assigned = CollisionAssigned::new();

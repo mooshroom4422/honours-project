@@ -1,4 +1,4 @@
-use std::{fs, collections::VecDeque};
+use std::{fs, collections::{VecDeque, HashSet}};
 use std::cmp;
 use rand::Rng;
 
@@ -21,13 +21,24 @@ pub enum Direction {
 pub struct Agent {
     pub position: Point,
     pub active: bool,
+    pub targets: i32, // -1 -> any
+}
+
+impl Agent {
+    fn from(point: Point) -> Agent {
+        Agent {
+            position: point,
+            active: true,
+            targets: -1,
+        }
+    }
 }
 
 pub fn agents_from(points: &Vec<Point>) -> Vec<Agent> {
     let mut res = Vec::new();
 
     for p in points {
-        res.push(Agent{position: *p});
+        res.push(Agent::from(*p));
     }
 
     res
@@ -37,13 +48,16 @@ pub fn agents_random(map: &Map, n: usize) -> Vec<Agent> {
     let mut res = Vec::new();
     let mut rng = rand::thread_rng();
 
+    let mut points_taken = HashSet::new();
+
     for _ in 0..n {
         loop {
             let x = rng.gen_range(0..map.width);
             let y = rng.gen_range(0..map.height);
-            if !res.contains(&Agent{ position: Point{x, y}}) &&
-                map.valid_point(&Point{x, y}) {
-                res.push(Agent{ position: Point{x, y}});
+            if !points_taken.contains(&Point{x, y}) &&
+               map.valid_point(&Point{x, y}) {
+                res.push(Agent::from(Point{x, y}));
+                points_taken.insert(Point{x, y});
                 break;
             }
         }
@@ -98,7 +112,7 @@ pub fn targets_random(map: &Map, n: usize, timer: i32) -> Vec<Target> {
     res
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Point {
     pub x: usize,
     pub y: usize,

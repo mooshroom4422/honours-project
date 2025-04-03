@@ -11,7 +11,7 @@ pub struct AgentStrategyTemplate {
 }
 
 impl AgentStrategyTemplate {
-    fn construct(&self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Box<dyn AgentStrategy> {
+    fn construct(&self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Box<dyn AgentStrategy> {
         match self.strategy {
             AgentStrategies::MakeSpanHopcroft => Box::new(MakeSpanHopcroft {}),
             AgentStrategies::NoCollisionSingle => {
@@ -155,15 +155,15 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, 
     for run_id in tqdm(0..num_runs as usize) {
         let start_time = Instant::now();
 
-        let agents = all_agents[run_id].clone();
+        let mut agents = all_agents[run_id].clone();
         let targets = all_targets[run_id].clone();
 
-        let agent_strat = agent_strat_template.construct(&map, &agents, &targets);
+        let agent_strat = agent_strat_template.construct(&map, &mut agents, &targets);
 
         let mut runner = Runner {
             map: map.clone(),
-            agents: agents,
-            targets: targets,
+            agents,
+            targets,
             d_time
         };
 

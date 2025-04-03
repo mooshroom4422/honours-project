@@ -98,7 +98,7 @@ fn main() {
 
                 let mut agent_strat = CollisionFree::new();
                 let mut matcher = HopcroftKarp::new();
-                agent_strat.prep(&map, &all_agents[i], &all_targets[i], &mut matcher);
+                agent_strat.prep(&map, &mut all_agents[i].clone(), &all_targets[i], &mut matcher);
 
                 let mut runner = Runner {
                     map: map.clone(),
@@ -118,12 +118,12 @@ fn main() {
 
                 strategies[i].flush();
                 let mut perm = CollisionAssigned::new();
-                perm.prep(&map, &all_agents[i], &all_targets[i], &vec![0, 1]);
+                perm.prep(&map, &mut all_agents[i].clone(), &all_targets[i], &vec![0, 1]);
                 took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "") as u64;
                 println!("01 took: {}", took_steps);
 
                 strategies[i].flush();
-                perm.prep(&map, &all_agents[i], &all_targets[i], &vec![1, 0]);
+                perm.prep(&map, &mut all_agents[i].clone(), &all_targets[i], &vec![1, 0]);
                 took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "") as u64;
                 println!("10 took: {}", took_steps);
 

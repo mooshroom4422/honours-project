@@ -1,4 +1,5 @@
 use std::time::Instant;
+use std::collections::HashSet;
 
 use crate::map::*;
 use crate::generate_gif::*;
@@ -54,14 +55,33 @@ impl Runner {
 
             }
 
-            for agent in &mut self.agents {
+            let mut used = HashSet::new();
 
-            }
+            let agent_positions = self.agents.clone()
+                .into_iter()
+                .filter(|x| x.active)
+                .map(|x| x.position)
+                .collect::<HashSet<_>>();
+
+            let target_positions = self.targets.clone()
+                .into_iter()
+                .map(|x| x.position)
+                .collect::<HashSet<_>>();
 
             self.targets = self.targets.clone()
                 .into_iter()
-                .filter(|t| !self.agents.contains(&Agent{position: t.position}))
+                .filter(|t| !agent_positions.contains(&t.position))
                 .collect::<Vec<_>>();
+
+            for agent in &mut self.agents {
+                if !agent.active ||
+                   !target_positions.contains(&agent.position) ||
+                   used.contains(&agent.position) {
+                    continue;
+                }
+                used.insert(agent.position);
+                agent.active = false;
+            }
 
             turns += 1;
             // debug
