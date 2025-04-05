@@ -35,7 +35,7 @@ fn main() {
         AgentStrategies::CollisionFree,
     ];
 
-    let nruns = 100;
+    let nruns = 1000;
 
     for map_name in maps {
 

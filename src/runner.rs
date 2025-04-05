@@ -57,6 +57,13 @@ impl Runner {
 
             let mut used = HashSet::new();
 
+            if debug_printing {
+                println!("turn: {}", turns);
+                println!("pre:");
+                println!("{:?}", self.agents);
+                println!("{:?}", self.targets);
+            }
+
             let agent_positions = self.agents.clone()
                 .into_iter()
                 .filter(|x| x.active)
@@ -81,6 +88,12 @@ impl Runner {
                 }
                 used.insert(agent.position);
                 agent.active = false;
+            }
+
+            if debug_printing {
+                println!("post:");
+                println!("{:?}", self.agents);
+                println!("{:?}", self.targets);
             }
 
             turns += 1;
