@@ -67,7 +67,7 @@ impl Runner {
             let agent_positions = self.agents.clone()
                 .into_iter()
                 .filter(|x| x.active)
-                .map(|x| x.position)
+                .map(|x| (x.position, x.targets))
                 .collect::<HashSet<_>>();
 
             let target_positions = self.targets.clone()
@@ -77,7 +77,7 @@ impl Runner {
 
             self.targets = self.targets.clone()
                 .into_iter()
-                .filter(|t| !agent_positions.contains(&t.position))
+                .filter(|t| !agent_positions.contains(&(t.position, t.idx as i32)))
                 .collect::<Vec<_>>();
 
             for agent in &mut self.agents {
