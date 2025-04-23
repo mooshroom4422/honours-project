@@ -4,3 +4,4 @@
 notes.org
 *.out
 *.eld
+/resources/maps/*.dist

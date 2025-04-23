@@ -24,6 +24,7 @@ use rand::prelude::*;
 fn main() {
 
     let maps = vec![
+        // "example.map",
         "arena.map",
         // "tunnel.map",
         // "arena2.map", // too big for n^4 distance oracle
