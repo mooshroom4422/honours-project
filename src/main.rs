@@ -20,11 +20,12 @@ use crate::bench::*;
 use hopcroft_karp::HopcroftKarp;
 use rand::prelude::*;
 
-
+/*
 fn main() {
 
     let maps = vec![
-        "arena.map",
+        "example.map",
+        // "arena.map",
         // "tunnel.map",
         // "arena2.map", // too big for n^4 distance oracle
     ];
@@ -132,26 +133,29 @@ fn main() {
         }
     }
 }
+*/
 
-/*
 fn main() {
     let map = Map::new("resources/maps/tunnel.map");
+    // let map = Map::new("resources/maps/example.map");
 
     let d_time = std::i32::MAX;
     // let d_time = 2;
-    let agents = agents_from(&Vec::from([
+    let mut agents = agents_from(&Vec::from([
         Point{x: 1, y: 1},
         Point{x: 1, y: 3},
     ]));
     let mut targets = targets_from(&Vec::from([
+        // Point{x: 3, y: 3},
         Point{x: 27, y: 1},
         Point{x: 27, y: 3},
     ]), d_time);
     // let mut agents = agents_random(&map, 3);
     // let mut targets = targets_random(&map, 3, d_time);
 
-    let mut follow_path = TargetFollowPath::new(targets.len(), &map,
-        targets.iter().map(|x| x.position).collect(), &mut targets, true, 0);
+    let mut follow_path: Box<dyn TargetStrategy> =
+        Box::new(TargetFollowPath::new(targets.len(), &map,
+        targets.iter().map(|x| x.position).collect(), &mut targets, true, 0));
 
     let perm = vec![1, 3, 2, 0];
     // let mut agent_strat = CollisionAssigned::new();
@@ -159,18 +163,17 @@ fn main() {
 
     let mut flow = FordFulkerson::new();
     let mut agent_strat = NoCollisionFree::new();
-    agent_strat.prep(&map, &agents, &targets, &mut flow);
+    agent_strat.prep(&map, &mut agents, &targets, &mut flow);
 
     //let mut matcher = TurboMatching::new_empty();
     //let mut agent_strat = CollisionFree::new();
     //agent_strat.prep(&map, &agents, &targets, &mut matcher);
 
     let mut runner = Runner{map: map.clone(), agents, targets, d_time};
-    let took = runner.run(Box::new(agent_strat), Box::new(follow_path), false, false, true, false, "generated/run.gif");
+    let took = runner.run(Box::new(agent_strat), &mut follow_path, false, false, true, false, "generated/run.gif");
     //let took = runner.run(MakeSpanHopcroft, follow_path, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
-*/
 /*
 fn main() {
     let map = Map::new("resources/maps/tunnel.map");

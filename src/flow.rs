@@ -74,7 +74,7 @@ impl MaxFlow for FordFulkerson {
     }
 
     fn add_edge(&mut self, from: i32, to: i32, capacity: i32) {
-        println!("from={} to={}", from, to);
+        // println!("from={} to={}", from, to);
         let mut prev = self.adj.remove(&from).unwrap_or(Vec::new());
         prev.push(to);
         self.adj.insert(from, prev);

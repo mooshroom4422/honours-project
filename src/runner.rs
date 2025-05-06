@@ -111,7 +111,7 @@ impl Runner {
 
         if enable_gif {
             let got = generate_gif(&frames, &self.map, gif_path);
-            println!("helo");
+            // println!("helo");
             if got.is_err() {
                 println!("error saving gif, make sure that '{}' directory is present", gif_path);
             }

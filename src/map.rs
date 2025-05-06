@@ -303,6 +303,26 @@ impl Map {
     pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
         self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
     }
+
+    pub fn neighbor(&self, p1: &Point, p2: &Point) -> Direction {
+        let dist = p1.x.abs_diff(p2.x) + p1.y.abs_diff(p2.y);
+        assert!(dist <= 1, "{:?} -> {:?}", p1, p2);
+        if dist == 0 {
+            return Direction::None;
+        }
+        else if p1.x < p2.x {
+            return Direction::East;
+        }
+        else if p2.x < p1.x {
+            return Direction::West;
+        }
+        else if p1.y < p2.y {
+            return Direction::North;
+        }
+        else {
+            return Direction::South;
+        }
+    }
 }
 
 pub fn print_board(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) {
