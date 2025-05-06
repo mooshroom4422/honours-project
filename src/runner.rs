@@ -77,7 +77,8 @@ impl Runner {
 
             self.targets = self.targets.clone()
                 .into_iter()
-                .filter(|t| !agent_positions.contains(&(t.position, t.idx as i32)))
+                .filter(|t| !(agent_positions.contains(&(t.position, t.idx as i32)) ||
+                            agent_positions.contains(&(t.position, -1))))
                 .collect::<Vec<_>>();
 
             for agent in &mut self.agents {

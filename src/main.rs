@@ -20,23 +20,22 @@ use crate::bench::*;
 use hopcroft_karp::HopcroftKarp;
 use rand::prelude::*;
 
-/*
 fn main() {
 
     let maps = vec![
-        "example.map",
-        // "arena.map",
-        // "tunnel.map",
+        // "example.map",
+        "arena.map",
+        "tunnel.map",
         // "arena2.map", // too big for n^4 distance oracle
     ];
 
     let strats = vec![
         AgentStrategies::MakeSpanHopcroft,
-        // AgentStrategies::NoCollisionFree,
         AgentStrategies::CollisionFree,
+        AgentStrategies::NoCollisionFree,
     ];
 
-    let nruns = 1000;
+    let nruns = 42;
 
     for map_name in maps {
 
@@ -71,7 +70,7 @@ fn main() {
                 strategy: strat.clone(),
                 permutation: None,
                 matcher: Some(HopcroftKarp::new()),
-                flow: None,
+                flow: Some(FordFulkerson::new()),
             };
 
             for strat in &mut strategies {
@@ -93,7 +92,7 @@ fn main() {
         }
 
         for i in 0..nruns {
-            if collected[0][i] < collected[1][i] {
+            if collected[0][i] < collected[1][i] && false {
                 println!("invalid: {} {:?} {:?}", i, collected[0][i], collected[1][i]);
                 println!("{:?}, {:?}", all_agents[i], all_targets[i]);
 
@@ -133,8 +132,8 @@ fn main() {
         }
     }
 }
-*/
 
+/*
 fn main() {
     let map = Map::new("resources/maps/tunnel.map");
     // let map = Map::new("resources/maps/example.map");
@@ -174,6 +173,7 @@ fn main() {
     //let took = runner.run(MakeSpanHopcroft, follow_path, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
+*/
 /*
 fn main() {
     let map = Map::new("resources/maps/tunnel.map");
