@@ -76,7 +76,7 @@ impl TargetFollowPath {
         }
         if !generate { return; }
         for (i, target) in targets.iter_mut().enumerate() {
-            self.generate_path(i, len, map, self.starting_points[i], target.timer);
+            self.generate_path(i, len, map, self.starting_points[i], target.timer, 1.0);
             self.generate_path_target(map, i, self.starting_points[i], target);
         }
         // println!("{:?}", targets);
@@ -88,15 +88,18 @@ impl TargetFollowPath {
         self.blocked[x][y].contains(&time)
     }
 
-    fn generate_path(&mut self, idx: usize, mut len: i32, map: &Map, start_position: Point, timer: i32) {
+    fn generate_path(&mut self, idx: usize, mut len: i32, map: &Map, start_position: Point, timer: i32, same_dir: f64) {
         if len == -1 {
             len = 10; // randomize later
+            todo!();
         }
 
         let dirs = Vec::from([Direction::North, Direction::East,
             Direction::South, Direction::West, Direction::None]);
+        let probs = vec![0.2; 5];
         let mut position = start_position.clone();
         let mut time_now = timer;
+        let last = -1;
         for i in 0..len {
             let mut iter = 0;
             let mut dir = dirs.choose(&mut rand::thread_rng()).unwrap();
@@ -104,7 +107,24 @@ impl TargetFollowPath {
             while iter < 20 && (!map.valid_point(&go_direction(position, *dir))
                 || self.is_blocked(&go_direction(position, *dir), (i+1) as usize)) {
 
-                dir = dirs.choose(&mut rand::thread_rng()).unwrap();
+                // dir = dirs.choose(&mut rand::thread_rng()).unwrap();
+                let mut pr_now = probs.clone();
+                if last != -1 {
+                    pr_now[last as usize] *= same_dir;
+                    let sm = 0.8 + 0.2*same_dir;
+                    for i in 0..pr_now.len() {
+                        pr_now[i] /= sm;
+                    }
+                }
+                let mut rng = rand::random::<f64>();
+                let mut sm = 0.0;
+                for i in 0..pr_now.len() {
+                    sm += pr_now[i];
+                    if sm >= rng {
+                        dir = &dirs[i];
+                        break;
+                    }
+                }
                 iter += 1;
             }
             if iter >= 20 { dir = &Direction::None; }

@@ -50,7 +50,7 @@ pub fn makespan_solve(map: &Map, agents: &Vec<Point>, targets: &Vec<Point>, matc
         }
     }
 
-    // bringback matcher to state with optimal mid
+    // bring back matcher to state with optimal mid
     if res != -1 {
         let mut graph: Vec<Vec<usize>> = vec![Vec::new(); n+m];
         for (i, agent) in agents.iter().enumerate() {

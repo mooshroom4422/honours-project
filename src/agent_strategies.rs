@@ -14,17 +14,23 @@ pub enum AgentStrategies {
 }
 
 pub trait AgentStrategy {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
 }
 
 pub struct MakeSpanHopcroft;
 impl AgentStrategy for MakeSpanHopcroft {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = vec![Direction::None; agents.len()];
 
         let agents_points = agents.into_iter()
             .filter(|x| x.active)
             .map(|x| x.position)
+            .collect::<Vec<_>>();
+
+        let idxs = agents.into_iter()
+            .enumerate()
+            .filter(|x| x.1.active)
+            .map(|x| x.0)
             .collect::<Vec<_>>();
 
         let targets_points = targets.into_iter()
@@ -38,7 +44,8 @@ impl AgentStrategy for MakeSpanHopcroft {
         for i in 0..agents_points.len() {
             if matching[i] == -1 { continue; }
             let t = (matching[i] as usize)-agents_points.len();
-            res[i] = map.get_direction(&agents[i].position, &targets[t].position);
+            res[idxs[i]] = map.get_direction(&agents[idxs[i]].position, &targets[t].position);
+            agents[idxs[i]].targets = targets[t].idx as i32;
         }
 
         res
@@ -80,7 +87,7 @@ impl NoCollisionSingle {
 }
 
 impl AgentStrategy for NoCollisionSingle {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         assert!(agents.len() == 1);
         assert!(self.expected_time != -1);
         if !self.ready { self.prep(map, &agents[0], &targets[0]) }
@@ -116,7 +123,7 @@ impl CollisionAssigned {
 }
 
 impl AgentStrategy for CollisionAssigned {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, _targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, _targets: &Vec<Target>) -> Vec<Direction> {
         assert!(self.ready);
         let mut res = vec![Direction::None; agents.len()];
         for (idx, agent) in agents.iter().enumerate() {
@@ -188,7 +195,7 @@ impl CollisionFree {
 }
 
 impl AgentStrategy for CollisionFree {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         assert!(self.ready);
         let mut res = vec![Direction::None; agents.len()];
         for (idx, agent) in agents.iter().enumerate() {
@@ -321,7 +328,7 @@ impl NoCollisionFree {
         let sink = -2;
 
         let mut left: i32 = 0;
-        let mut right: i32 = 100;
+        let mut right: i32 = 150;
         let mut res: i32 = -1;
 
         while left <= right {
@@ -402,7 +409,7 @@ impl NoCollisionFree {
 }
 
 impl AgentStrategy for NoCollisionFree {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = Vec::new();
         for idx in 0..agents.len() {
             if self.paths_idx[idx] >= self.paths[idx].len() {

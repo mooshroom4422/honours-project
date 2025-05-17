@@ -171,7 +171,7 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, 
         // println!("{:?}", agents);
         // println!("{:?}", targets);
 
-        let took_steps = runner.run(agent_strat, &mut target_strat[run_id], debug_print, false, false, debug_print, "") as u64;
+        let took_steps = runner.run(agent_strat, &mut target_strat[run_id], debug_print, false, false, debug_print, "generated/asd.gif", 3000) as u64;
 
         //println!("run: {} -> {:?} {:?} {:?}", iter, num_agents, num_targets, took_steps);
 
