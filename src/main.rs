@@ -34,10 +34,10 @@ fn main() {
     let strats = vec![
         AgentStrategies::MakeSpanHopcroft,
         AgentStrategies::CollisionFree,
-        AgentStrategies::NoCollisionFree,
+        // AgentStrategies::NoCollisionFree,
     ];
 
-    let nruns = 100;
+    let nruns = 10_000;
 
     for map_name in maps {
 

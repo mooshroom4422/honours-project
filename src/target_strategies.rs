@@ -76,7 +76,7 @@ impl TargetFollowPath {
         }
         if !generate { return; }
         for (i, target) in targets.iter_mut().enumerate() {
-            self.generate_path(i, len, map, self.starting_points[i], target.timer, 1.0);
+            self.generate_path(i, len, map, self.starting_points[i], target.timer, 5.0);
             self.generate_path_target(map, i, self.starting_points[i], target);
         }
         // println!("{:?}", targets);
@@ -96,7 +96,7 @@ impl TargetFollowPath {
 
         let dirs = Vec::from([Direction::North, Direction::East,
             Direction::South, Direction::West, Direction::None]);
-        let probs = vec![0.2; 5];
+        let probs = vec![0.225, 0.225, 0.225, 0.225, 0.1];
         let mut position = start_position.clone();
         let mut time_now = timer;
         let last = -1;
