@@ -5,6 +5,7 @@ use crate::map::*;
 use crate::generate_gif::*;
 use crate::agent_strategies::*;
 use crate::target_strategies::*;
+use log::{warn};
 
 pub struct Runner {
     pub map: Map,
@@ -15,7 +16,8 @@ pub struct Runner {
 
 impl Runner {
     pub fn run(&mut self, mut agent_strat: Box<dyn AgentStrategy>, target_strat: &mut Box<dyn TargetStrategy>,
-            debug_printing: bool, enable_runtime_checks: bool, enable_gif: bool, print_res: bool, gif_path: &str) -> i32 {
+            debug_printing: bool, enable_runtime_checks: bool, enable_gif: bool, print_res: bool, gif_path: &str,
+            MAX_ITER: i32) -> i32 {
 
         let start = Instant::now();
         let mut frames: Vec<Vec<u8>> = Vec::new();
@@ -26,7 +28,7 @@ impl Runner {
 
         let mut turns = 0;
         let mut iter = 0;
-        while self.targets.len() > 0 && iter < 110 {
+        while self.targets.len() > 0 && iter < MAX_ITER {
             iter += 1;
             if debug_printing { println!("========================"); }
             let target_dirs = target_strat.pick(&self.map, &self.agents, &self.targets);
@@ -41,7 +43,7 @@ impl Runner {
                 }
             }
 
-            let agent_dirs = agent_strat.pick(&self.map, &self.agents, &self.targets);
+            let agent_dirs = agent_strat.pick(&self.map, &mut self.agents, &self.targets);
             for (idx, dir) in agent_dirs.iter().enumerate() {
                 self.agents[idx].position = go_direction(self.agents[idx].position, *dir);
             }
@@ -55,7 +57,7 @@ impl Runner {
 
             }
 
-            let mut used = HashSet::new();
+            // let mut used = HashSet::new();
 
             if debug_printing {
                 println!("turn: {}", turns);
@@ -75,20 +77,27 @@ impl Runner {
                 .map(|x| x.position)
                 .collect::<HashSet<_>>();
 
-            self.targets = self.targets.clone()
-                .into_iter()
-                .filter(|t| !agent_positions.contains(&(t.position, t.idx as i32)))
-                .collect::<Vec<_>>();
-
             for agent in &mut self.agents {
-                if !agent.active ||
-                   !target_positions.contains(&agent.position) ||
-                   used.contains(&agent.position) {
+                if !agent.active {
+                   // !target_positions.contains(&agent.position) ||
+                   // used.contains(&agent.position) {
                     continue;
                 }
-                used.insert(agent.position);
+                let same_pos = self.targets.clone()
+                    .into_iter()
+                    .filter(|x| x.position == agent.position)
+                    .filter(|x| x.idx as i32 == agent.targets)
+                    .collect::<Vec<_>>();
+                if same_pos.is_empty() { continue; }
+                // used.insert(agent.position);
                 agent.active = false;
             }
+
+            self.targets = self.targets.clone()
+                .into_iter()
+                .filter(|t| !(agent_positions.contains(&(t.position, t.idx as i32)) ||
+                            agent_positions.contains(&(t.position, -1))))
+                .collect::<Vec<_>>();
 
             if debug_printing {
                 println!("post:");
@@ -111,11 +120,15 @@ impl Runner {
 
         if enable_gif {
             let got = generate_gif(&frames, &self.map, gif_path);
-            println!("helo");
+            // println!("helo");
             if got.is_err() {
                 println!("error saving gif, make sure that '{}' directory is present", gif_path);
             }
         }
+
+        if iter == MAX_ITER { warn!("max iter reached!"); }
+
+        if self.targets.len() > 0 { println!("did not finish!"); }
 
         if print_res {
             println!("simulation took: {:?}", start.elapsed());

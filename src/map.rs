@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::{self, Write, Read};
 use bytesize::ByteSize;
+use log::{info, trace};
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tile {
@@ -166,6 +167,7 @@ impl Map {
     pub fn new(file_path: &str) -> Self {
         let start = Instant::now();
 
+        info!("reading: {}", file_path);
         let file = fs::read_to_string(file_path)
             .expect("error reading file");
 
@@ -197,13 +199,20 @@ impl Map {
         let got = Map::load(&database_path);
 
         if let Some(compressed) = got {
-            println!("loaded: {}", database_path);
+            info!("loaded: {}", database_path);
+            trace!("width: {}", width);
+            trace!("height: {}", height);
+            trace!("compressed.len(): {}", compressed.len());
+            trace!("compressed[0].len(): {}", compressed[0].len());
             return Map {
                 height,
                 width,
                 map,
                 compressed,
             };
+        }
+        else {
+            info!(".dist file not found, starting calculation");
         }
 
         let mut res = Map {
@@ -222,7 +231,7 @@ impl Map {
 
         let mut compressed = vec![vec![Vec::new(); height]; width];
 
-        for y in (0..height).rev() {
+        for y in 0..height {
             for x in 0..width {
                 if res.valid_point_expl(x, y) {
                     let (initial_rectagle, prefs) = Map::compute_board(&mut res, x as i32, y as i32);
@@ -234,12 +243,14 @@ impl Map {
                     //println!("{}, {}: \n {:?}", x, y, compressed.len());
                 }
             }
-            println!("finished y: {}", y);
+            trace!("finished y: {}/{}, completed: {}%", y, height, (y as f64)/(height as f64)*100.0);
         }
 
         let ratio = (normal_size as f64)/(compressed_size as f64);
-        println!("normal: {}\ncompressed: {}\n compression ratio: {}", normal_size, compressed_size, ratio);
-        println!("took: {:?}", start.elapsed());
+        info!("normal: {}", normal_size);
+        info!("compressed: {}", compressed_size);
+        info!("compression ratio: {}", ratio);
+        info!("compression took: {:?}", start.elapsed());
 
         let serialized_data = bincode::serialize(&compressed).expect("failed to serialize data");
 
@@ -248,10 +259,10 @@ impl Map {
         file.write_all(&serialized_data)
             .expect("failed to write to file");
 
-        println!("saved dist to: {}", database_path);
-        println!("file size: {}", ByteSize(serialized_data.len() as u64));
+        info!("saved dist to: {}", database_path);
+        info!("file size: {}", ByteSize(serialized_data.len() as u64));
 
-        todo!();
+        res.compressed = compressed;
 
         res
     }
@@ -535,12 +546,52 @@ impl Map {
 
     pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
         //self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
+        println!("========");
+        println!("{:?} -> {:?}", self.map[p1.x][p1.y], self.map[p2.x][p2.y]);
+        println!("{:?}", self.compressed[p1.x][p1.y]);
+        println!("{:?} -> {:?}", p1, p2);
         for rect in self.compressed[p1.x][p1.y].iter() {
             if Map::inside(&rect, &p2) {
+                println!("returning: {:?}", rect.dir);
                 return rect.dir;
             }
         }
-        panic!()
+        panic!("no direction was found!")
+    }
+
+    pub fn print_compressed_from(&self, pnt: &Point) {
+        for y in (0..self.height).rev() {
+            for x in 0..self.width {
+                let p2 = Point{x, y};
+                if !self.valid_point(&p2) {
+                    print!("{}", elegant(&Direction::Unreachable ));
+                }
+                else {
+                    print!("{}", elegant(&self.get_direction(pnt, &p2)));
+                }
+            }
+            print!("\n");
+        }
+    }
+
+    pub fn neighbor(&self, p1: &Point, p2: &Point) -> Direction {
+        let dist = p1.x.abs_diff(p2.x) + p1.y.abs_diff(p2.y);
+        assert!(dist <= 1, "{:?} -> {:?}", p1, p2);
+        if dist == 0 {
+            return Direction::None;
+        }
+        else if p1.x < p2.x {
+            return Direction::East;
+        }
+        else if p2.x < p1.x {
+            return Direction::West;
+        }
+        else if p1.y < p2.y {
+            return Direction::North;
+        }
+        else {
+            return Direction::South;
+        }
     }
 }
 
@@ -565,26 +616,32 @@ pub fn print_from(map: &Map, from: &Vec<Vec<Direction>>) {
 }
 
 pub fn print_board(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) {
+    print!("{:>5}", "");
+    for x in 0..map.width {
+        print!("{:>3}", x);
+    }
+    print!("\n");
     for y in (0..map.height).rev() {
+        print!("{:>5}", y);
         for x in 0..map.width {
             let ag = agents.into_iter()
                 .any(|f| f.position == Point{x, y});
             let tr = targets.into_iter()
                 .any(|f| f.position == Point{x, y});
             if ag && tr {
-                print!("F");
+                print!("{:>3}", "F");
             }
             else if ag {
-                print!("A");
+                print!("{:>3}", "A");
             }
             else if tr {
-                print!("T");
+                print!("{:>3}", "T");
             }
             else if map.valid_point(&Point{x, y}){
-                print!(".");
+                print!("{:>3}", ".");
             }
             else {
-                print!("X");
+                print!("{:>3}", "X");
             }
         }
         print!("\n");

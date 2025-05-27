@@ -14,17 +14,23 @@ pub enum AgentStrategies {
 }
 
 pub trait AgentStrategy {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction>;
 }
 
 pub struct MakeSpanHopcroft;
 impl AgentStrategy for MakeSpanHopcroft {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = vec![Direction::None; agents.len()];
 
         let agents_points = agents.into_iter()
             .filter(|x| x.active)
             .map(|x| x.position)
+            .collect::<Vec<_>>();
+
+        let idxs = agents.into_iter()
+            .enumerate()
+            .filter(|x| x.1.active)
+            .map(|x| x.0)
             .collect::<Vec<_>>();
 
         let targets_points = targets.into_iter()
@@ -38,7 +44,8 @@ impl AgentStrategy for MakeSpanHopcroft {
         for i in 0..agents_points.len() {
             if matching[i] == -1 { continue; }
             let t = (matching[i] as usize)-agents_points.len();
-            res[i] = map.get_direction(&agents[i].position, &targets[t].position);
+            res[idxs[i]] = map.get_direction(&agents[idxs[i]].position, &targets[t].position);
+            agents[idxs[i]].targets = targets[t].idx as i32;
         }
 
         res
@@ -80,7 +87,7 @@ impl NoCollisionSingle {
 }
 
 impl AgentStrategy for NoCollisionSingle {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         assert!(agents.len() == 1);
         assert!(self.expected_time != -1);
         if !self.ready { self.prep(map, &agents[0], &targets[0]) }
@@ -116,7 +123,7 @@ impl CollisionAssigned {
 }
 
 impl AgentStrategy for CollisionAssigned {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, _targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, _targets: &Vec<Target>) -> Vec<Direction> {
         assert!(self.ready);
         let mut res = vec![Direction::None; agents.len()];
         for (idx, agent) in agents.iter().enumerate() {
@@ -188,7 +195,7 @@ impl CollisionFree {
 }
 
 impl AgentStrategy for CollisionFree {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         assert!(self.ready);
         let mut res = vec![Direction::None; agents.len()];
         for (idx, agent) in agents.iter().enumerate() {
@@ -231,7 +238,7 @@ impl NoCollisionFree {
     }
 
     fn conv_edge_expl(&self, layer: i32, x: i32, y: i32, dir: &Direction) -> i32 {
-        let cell = self.conv_expl(layer, x, y);
+        let cell = self.conv_expl(layer, x*3, y*3);
         // no move -> special 3rd, or just skip filter
         // e, s -> normal
         // w, n -> move back and create edge
@@ -240,11 +247,13 @@ impl NoCollisionFree {
         else if *dir == Direction::East || *dir == Direction::South {
             let mut mv = 1;
             if *dir == Direction::South { mv = 2; }
+            // println!("conv_edge: {} {} {:?} -> {} {}", x, y, dir, cell, mv);
             return cell + mv;
         }
         else {
             let mut tmp = Point { x: x as usize, y: y as usize };
-            tmp = go_direction(tmp, Map::reverse_direction(dir));
+            tmp = go_direction(tmp, *dir);
+            // println!("conv_edge: {} {} {:?} -> {} {} {:?}", x, y, dir, tmp.x, tmp.y, Map::reverse_direction(dir));
             return self.conv_edge(layer, &tmp, &Map::reverse_direction(dir));
         }
     }
@@ -255,9 +264,9 @@ impl NoCollisionFree {
 
     fn reconv_point(&self, time: i32, pos: i32) -> Point {
         let mut notime = pos;
-        if time > 0 { notime = pos%(time*self.width*self.height); }
-        let x = (notime/self.width) as usize;
-        let y = (notime%self.width) as usize;
+        if time > 0 { notime = pos%(time*self.width*self.height*Self::DIRECTIONS); }
+        let x = (notime%self.width) as usize;
+        let y = (notime/self.width) as usize;
         Point {x, y}
     }
 
@@ -270,11 +279,12 @@ impl NoCollisionFree {
         flow.reset();
         flow.set_source(source);
         flow.set_sink(sink);
-        println!("connecting source to agents:");
+        // println!("source={}, sink={}", source, sink);
+        // println!("connecting source to agents:");
         for agent in agents.iter() {
             flow.add_edge(source, self.conv(0, &agent.position), 1);
         }
-        println!("======");
+        // println!("======");
 
         for timer in 0..mid {
             for x in 0..self.width {
@@ -284,13 +294,13 @@ impl NoCollisionFree {
                         if !map.valid_point(&pnt) || !map.valid_direction(pnt, *dir) { continue; }
                         let nxt = go_direction(pnt, *dir);
                         if !map.valid_point(&nxt) { continue; }
-                        println!("trying: pnt={:?} {:?} -> nxt={:?}", pnt, *dir, nxt);
+                        // println!("trying: pnt={:?} {:?} -> nxt={:?}", pnt, *dir, nxt);
                         let conv_edge = self.conv_edge(Self::LAYERS*timer+1, &pnt, dir);
                         flow.add_edge(self.conv(Self::LAYERS*timer, &pnt), conv_edge, 1);
-                        flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &pnt), 1); // zle double edges
+                        flow.add_edge(conv_edge, self.conv(Self::LAYERS*timer+2, &nxt), 1); // zle double edges
                     }
                     // cell filter
-                    println!("cell filter: timer={} x={} y={}", timer, x, y);
+                    // println!("cell filter: timer={} x={} y={}", timer, x, y);
                     flow.add_edge(self.conv(Self::LAYERS*timer+2, &pnt), self.conv(Self::LAYERS*timer+3, &pnt), 1);
                 }
             }
@@ -298,7 +308,7 @@ impl NoCollisionFree {
 
         let mut collector = sink-1; // assuming sink is the smallest node (in terms of id)
         for target in targets.iter() {
-            //println!("{:?} {} {:?}", &target.at_time(mid as usize),
+            // println!("{:?} {} {:?}", &target.at_time(mid as usize),
             //         self.conv(2*mid, &target.at_time(mid as usize)),
             //         self.reconv_point(2*mid, self.conv(2*mid, &target.at_time(mid as usize))));
             flow.add_edge(collector, sink, 1);
@@ -310,7 +320,7 @@ impl NoCollisionFree {
 
     }
 
-    pub fn prep(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>, flow: &mut impl MaxFlow) {
+    pub fn prep(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>, flow: &mut impl MaxFlow) {
         self.height = map.height as i32;
         self.width = map.width as i32;
 
@@ -318,18 +328,17 @@ impl NoCollisionFree {
         let sink = -2;
 
         let mut left: i32 = 0;
-        let mut right: i32 = 100;
+        let mut right: i32 = 150;
         let mut res: i32 = -1;
 
         while left <= right {
-            // let mid = left+(right-left)/2;
-            let mid = 3;
-            println!("mid={}", mid);
-            println!("agents={:?}", agents);
-            println!("targets={:?}", targets);
+            let mid = left+(right-left)/2;
+            // println!("mid={}", mid);
+            // println!("agents={:?}", agents);
+            // println!("targets={:?}", targets);
 
             self.construct(flow, sink, source, mid, map, agents, targets);
-            println!("finished construction");
+            // println!("finished construction");
 
             if flow.get_flow() == agents.len() as i32 {
                 right = mid-1;
@@ -339,12 +348,12 @@ impl NoCollisionFree {
                 left = mid+1;
             }
 
-            println!("finished: {}, {}, l:{}, r:{}", mid, res, left, right);
-            println!("flow={}", flow.get_flow());
-            panic!();
+            // println!("finished: {}, {}, l:{}, r:{}", mid, res, left, right);
+            // println!("flow={}", flow.get_flow());
+            // panic!();
         }
 
-        println!("res: {}", res);
+        // println!("res: {}", res);
         if res == -1 {
             println!("couldnt find any path :(");
             panic!();
@@ -361,20 +370,38 @@ impl NoCollisionFree {
             last_pos[idx] = agent.position;
         }
 
+        // println!("res: {}", res);
         for timer in 0..res {
             for idx in 0..agents.len() {
-                let conv_pos = self.conv(2*timer, &last_pos[idx]);
-                let edge = flow.get_saturated_edge(conv_pos);
+                let conv_pos = self.conv(Self::LAYERS*timer, &last_pos[idx]);
+                let mut edge = flow.get_saturated_edge(conv_pos);
+                // println!("\nconv_pos={}", conv_pos);
                 if edge.is_none() {
-                    //println!("dead end: t={} idx={} x={} y={}", timer, idx, last_pos[idx].x, last_pos[idx].y);
+                    // println!("dead end: t={} idx={} x={} y={}", timer, idx, last_pos[idx].x, last_pos[idx].y);
+                    panic!("failed to recontruct path");
                 }
-                //print!("added: t={} idx={} x={} y={}", timer, idx, last_pos[idx].x, last_pos[idx].y);
-                let npos = edge.unwrap().1;
-                let npoint = self.reconv_point(2*timer+1, npos);
-                self.paths[idx].push(map.get_direction(&last_pos[idx], &npoint));
+                // println!("added: t={} idx={} x={} y={}", timer, idx, last_pos[idx].x, last_pos[idx].y);
+                let edge_filter = edge.unwrap().1;
+                // println!("edge_filter: {}", edge_filter);
+                let mut edge = flow.get_saturated_edge(edge_filter);
+                let cell_filter = edge.unwrap().1;
+                // println!("cell_filter: {}", cell_filter);
+                let mut edge = flow.get_saturated_edge(cell_filter);
+                let next_cell = edge.unwrap().1;
+                // println!("next_cell: {}", next_cell);
+                let npoint = self.reconv_point(Self::LAYERS*(timer+1), next_cell);
+                self.paths[idx].push(map.neighbor(&last_pos[idx], &npoint));
                 last_pos[idx] = npoint;
-                //print!(" -> x={} y={}\n", last_pos[idx].x, last_pos[idx].y);
+                // println!(" -> x={} y={} dir={:?}\n", last_pos[idx].x, last_pos[idx].y, self.paths[idx].last());
             }
+        }
+
+        for idx in 0..agents.len() {
+            let conv_pos = self.conv(Self::LAYERS*res, &last_pos[idx]);
+            let edge = flow.get_saturated_edge(conv_pos);
+            // println!("next: {}", edge.unwrap().1);
+            let target_id = -(edge.unwrap().1 - (-3));
+            agents[idx].targets = target_id;
         }
 
         self.ready = true;
@@ -382,7 +409,7 @@ impl NoCollisionFree {
 }
 
 impl AgentStrategy for NoCollisionFree {
-    fn pick(&mut self, map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
+    fn pick(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>) -> Vec<Direction> {
         let mut res = Vec::new();
         for idx in 0..agents.len() {
             if self.paths_idx[idx] >= self.paths[idx].len() {
