@@ -127,7 +127,6 @@ impl Runner {
         }
 
         if iter == MAX_ITER { warn!("max iter reached!"); }
-
         if self.targets.len() > 0 { println!("did not finish!"); }
 
         if print_res {

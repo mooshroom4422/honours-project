@@ -19,20 +19,25 @@ use crate::flow::*;
 use crate::bench::*;
 use hopcroft_karp::HopcroftKarp;
 use rand::prelude::*;
+use log::info;
 
-/*
 fn main() {
-
+    env_logger::init();
     let maps = vec![
-        // "example.map",
-        "simple.map",
-        // "tunnel.map",
+//        "simple.map",
+        "arena.map",
+//        "tunnel.map",
+        "den020d.map",
+        "den101d.map",
+        "den202d.map",
+        "den312d.map",
+        "den998d.map",
         // "arena2.map", // too big for n^4 distance oracle
     ];
 
     let strats = vec![
         AgentStrategies::MakeSpanHopcroft,
-        // AgentStrategies::NoCollisionFree,
+        AgentStrategies::NoCollisionFree,
         // AgentStrategies::CollisionFree,
     ];
 
@@ -41,10 +46,11 @@ fn main() {
     for map_name in maps {
 
         // TODO: for some reason optimal method is worse if num_agents > 1
+        info!("starting map: {}", map_name);
 
-        let d_time = 10;
-        let num_agents = 2;
-        let num_targets = 2;
+        let d_time = 15;
+        let num_agents = 3;
+        let num_targets = 3;
         let map = Map::new(&("resources/maps/".to_owned() + map_name));
         let set = gen_set(&map, nruns, d_time, num_agents, num_targets, &mut rand::thread_rng(), Vec::new(), Vec::new());
         if set.is_err() {
@@ -60,7 +66,7 @@ fn main() {
 
         for targets in &mut all_targets {
             let target_strategy = TargetFollowPath::new(targets.len(), &map,
-                targets.iter().map(|x| x.position).collect(), targets, true, 10);
+                targets.iter().map(|x| x.position).collect(), targets, true, 1000);
             strategies.push(Box::new(target_strategy));
         }
 
@@ -71,7 +77,7 @@ fn main() {
                 strategy: strat.clone(),
                 permutation: None,
                 matcher: Some(HopcroftKarp::new()),
-                flow: None,
+                flow: Some(FordFulkerson::new()),
             };
 
             for strat in &mut strategies {
@@ -91,9 +97,10 @@ fn main() {
                 Err(s) => println!("Benchmark error: {}", s),
             }
         }
-
+    
+        /*
         for i in 0..nruns {
-            if collected[0][i] < collected[1][i] {
+            if collected[0][i] < collected[1][i] && true {
                 println!("invalid: {} {:?} {:?}", i, collected[0][i], collected[1][i]);
                 println!("{:?}, {:?}", all_agents[i], all_targets[i]);
 
@@ -109,32 +116,40 @@ fn main() {
                 };
 
                 strategies[i].flush();
-                let mut took_steps = runner.run(Box::new(agent_strat), &mut strategies[i], false, false, true, false, "generated/opt.gif") as u64;
+                let mut took_steps = runner.run(Box::new(agent_strat), &mut strategies[i], false, false, true, false, "generated/opt.gif", 3000) as u64;
                 println!("took: {}", took_steps);
+
+                let mut runner = Runner {
+                    map: map.clone(),
+                    agents: all_agents[i].clone(),
+                    targets: all_targets[i].clone(),
+                    d_time
+                };
 
                 strategies[i].flush();
                 let hophop = MakeSpanHopcroft {};
-                let mut took_steps = runner.run(Box::new(hophop), &mut strategies[i], false, false, true, false, "generated/hop.gif") as u64;
+                let mut took_steps = runner.run(Box::new(hophop), &mut strategies[i], true, false, true, true, "generated/hop.gif", 3000) as u64;
                 println!("took: {}", took_steps);
 
                 strategies[i].flush();
                 let mut perm = CollisionAssigned::new();
                 perm.prep(&map, &mut all_agents[i].clone(), &all_targets[i], &vec![0, 1]);
-                took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "") as u64;
+                took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "", 3000) as u64;
                 println!("01 took: {}", took_steps);
 
                 strategies[i].flush();
                 perm.prep(&map, &mut all_agents[i].clone(), &all_targets[i], &vec![1, 0]);
-                took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "") as u64;
+                took_steps = runner.run(Box::new(perm.clone()), &mut strategies[i], false, false, false, false, "", 3000) as u64;
                 println!("10 took: {}", took_steps);
 
                 return;
             }
         }
+        */
     }
 }
-*/
 
+/*
 fn main() {
     env_logger::init();
     let map = Map::new("resources/maps/arena.map");
@@ -146,8 +161,8 @@ fn main() {
 //        Point{x: 1, y: 3},
     ]));
     let mut targets = targets_from(&Vec::from([
-        Point{x: 9, y: 1},
-//        Point{x: 27, y: 3},
+//        Point{x: 9, y: 1},
+        Point{x: 27, y: 3},
     ]), d_time);
     // let mut agents = agents_random(&map, 3);
     // let mut targets = targets_random(&map, 3, d_time);
@@ -170,10 +185,11 @@ fn main() {
     //agent_strat.prep(&map, &agents, &targets, &mut matcher);
 
     let mut runner = Runner{map: map.clone(), agents, targets, d_time};
-    let took = runner.run(Box::new(agent_strat), &mut follow_path, true, false, true, false, "generated/run.gif", 100);
+    let took = runner.run(Box::new(agent_strat), &mut follow_path, false, false, true, false, "generated/run.gif", 100);
     //let took = runner.run(MakeSpanHopcroft, follow_path, false, true, "generated/run.gif");
     println!("took: {}", took);
 }
+*/
 
 /*
 fn main() {

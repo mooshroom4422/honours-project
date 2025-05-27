@@ -224,7 +224,7 @@ impl Map {
             compressed: Vec::new(),
         };
 
-        print_board(&res, &Vec::new(), &Vec::new());
+        // print_board(&res, &Vec::new(), &Vec::new());
 
         let mut normal_size = 0;
         let mut compressed_size = 0;
@@ -243,7 +243,7 @@ impl Map {
                     //println!("{}, {}: \n {:?}", x, y, compressed.len());
                 }
             }
-            trace!("finished y: {}/{}, completed: {}%", y, height, (y as f64)/(height as f64)*100.0);
+            trace!("finished y: {}/{}, completed: {:.2}%", y, height, (y as f64)/(height as f64)*100.0);
         }
 
         let ratio = (normal_size as f64)/(compressed_size as f64);
@@ -525,8 +525,8 @@ impl Map {
             res += 1;
             let dir = self.get_direction(&now, &pto);
             now = go_direction(now, dir);
-            println!("{} {} {} {}", fx, fy, tx, ty);
-            println!("{:?}", now);
+            //println!("{} {} {} {}", fx, fy, tx, ty);
+            //println!("{:?}", now);
         }
         return res;
     }
@@ -546,13 +546,13 @@ impl Map {
 
     pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
         //self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
-        println!("========");
-        println!("{:?} -> {:?}", self.map[p1.x][p1.y], self.map[p2.x][p2.y]);
-        println!("{:?}", self.compressed[p1.x][p1.y]);
-        println!("{:?} -> {:?}", p1, p2);
+        // println!("========");
+        // println!("{:?} -> {:?}", self.map[p1.x][p1.y], self.map[p2.x][p2.y]);
+        // println!("{:?}", self.compressed[p1.x][p1.y]);
+        // println!("{:?} -> {:?}", p1, p2);
         for rect in self.compressed[p1.x][p1.y].iter() {
             if Map::inside(&rect, &p2) {
-                println!("returning: {:?}", rect.dir);
+                // println!("returning: {:?}", rect.dir);
                 return rect.dir;
             }
         }
@@ -748,8 +748,111 @@ mod tests {
 
         res
     }
-    */
 
+    pub fn conv(&self, x: usize, y: usize) -> usize {
+        return y*self.width+x;
+    }
+
+    fn valid_point_expl(&self, x: usize, y: usize) -> bool {
+        x < self.width && y < self.height && self.map[x][y] == Tile::Free
+    }
+
+    pub fn reverse_direction(dir: &Direction) -> Direction {
+        match dir {
+            Direction::None => Direction::None,
+            Direction::North => Direction::South,
+            Direction::East => Direction::West,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+        }
+    }
+
+    pub fn valid_direction(&self, p: Point, dir: Direction) -> bool {
+        if p.y == self.height && dir == Direction::North { false }
+        else if p.x == self.width && dir == Direction::East { false }
+        else if p.y == 0 && dir == Direction::South { false }
+        else if p.x == 0 && dir == Direction::West { false }
+        else { true }
+    }
+
+    pub fn valid_point(&self, p: &Point) -> bool {
+        self.valid_point_expl(p.x, p.y)
+    }
+
+    fn dist(&self, fx: usize, fy: usize, tx: usize, ty: usize) -> usize {
+        if !self.valid_point_expl(fx, fy) || !self.valid_point_expl(tx, ty) {
+            return usize::MAX;
+        }
+        return self.dist[self.conv(fx, fy)][self.conv(tx, ty)];
+    }
+
+    pub fn dist_point(&self, p1: &Point, p2: &Point) -> usize {
+        self.dist(p1.x, p1.y, p2.x, p2.y)
+    }
+
+    fn get_dist(&self, x: usize, y: usize) -> &Vec<usize> {
+        &self.dist[self.conv(x, y)]
+    }
+
+    pub fn get_direction(&self, p1: &Point, p2: &Point) -> Direction {
+        self.from[self.conv(p1.x, p1.y)][self.conv(p2.x, p2.y)]
+    }
+
+    pub fn neighbor(&self, p1: &Point, p2: &Point) -> Direction {
+        let dist = p1.x.abs_diff(p2.x) + p1.y.abs_diff(p2.y);
+        assert!(dist <= 1, "{:?} -> {:?}", p1, p2);
+        if dist == 0 {
+            return Direction::None;
+        }
+        else if p1.x < p2.x {
+            return Direction::East;
+        }
+        else if p2.x < p1.x {
+            return Direction::West;
+        }
+        else if p1.y < p2.y {
+            return Direction::North;
+        }
+        else {
+            return Direction::South;
+        }
+    }
+}
+
+pub fn print_board(map: &Map, agents: &Vec<Agent>, targets: &Vec<Target>) {
+    for y in (0..map.height).rev() {
+        for x in 0..map.width {
+            let ag = agents.into_iter()
+                .any(|f| f.position == Point{x, y});
+            let tr = targets.into_iter()
+                .any(|f| f.position == Point{x, y});
+            if ag && tr {
+                print!("F");
+            }
+            else if ag {
+                print!("A");
+            }
+            else if tr {
+                print!("T");
+            }
+            else if map.valid_point(&Point{x, y}){
+                print!(".");
+            }
+            else {
+                print!("X");
+            }
+        }
+        print!("\n");
+    }
+    println!("agents: {:?}", agents);
+    println!("targets: {:?}", targets);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    */
     #[test]
     fn test_load() {
         let map = Map::new("resources/maps/example.map");
