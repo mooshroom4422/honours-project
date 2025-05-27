@@ -24,20 +24,23 @@ fn main() {
 
     let maps = vec![
         // "example.map",
-        "arena.map",
-        "tunnel.map",
+//        "arena.map",
+//        "tunnel.map",
+        "den020d.map",
+        "den101d.map",
+        "den202d.map",
         "den312d.map",
         "den998d.map",
         // "arena2.map", // too big for n^4 distance oracle
     ];
 
     let strats = vec![
-        AgentStrategies::MakeSpanHopcroft,
-        AgentStrategies::CollisionFree,
-        // AgentStrategies::NoCollisionFree,
+        // AgentStrategies::MakeSpanHopcroft,
+        // AgentStrategies::CollisionFree,
+        AgentStrategies::NoCollisionFree,
     ];
 
-    let nruns = 10_000;
+    let nruns = 250;
 
     for map_name in maps {
 
@@ -92,7 +95,8 @@ fn main() {
                 Err(s) => println!("Benchmark error: {}", s),
             }
         }
-
+    
+        /*
         for i in 0..nruns {
             if collected[0][i] < collected[1][i] && true {
                 println!("invalid: {} {:?} {:?}", i, collected[0][i], collected[1][i]);
@@ -139,6 +143,7 @@ fn main() {
                 return;
             }
         }
+        */
     }
 }
 
