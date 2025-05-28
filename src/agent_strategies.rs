@@ -2,6 +2,8 @@ use crate::hopcroft_karp::HopcroftKarp;
 use crate::map::*;
 use crate::matching::{Matcher, makespan_solve};
 use crate::flow::MaxFlow;
+use log::info;
+use std::time::Instant;
 
 #[allow(dead_code)]
 #[derive(PartialEq, Debug, Clone)]
@@ -70,7 +72,7 @@ impl NoCollisionSingle {
 
     pub fn prep(&mut self, map: &Map, agent: &Agent, target: &Target) {
         let mut l = 0;
-        let mut r = 1e6 as i32;
+        let mut r = 2048 as i32;
         while l <= r {
             let mid = l+(r-l)/2;
             if map.dist_point(&agent.position, &target.at_time(mid as usize)) as i32 <= mid {
@@ -146,12 +148,25 @@ impl CollisionFree {
     pub fn prep(&mut self, map: &Map, agents: &mut Vec<Agent>, targets: &Vec<Target>, matcher: &mut impl Matcher) {
         assert!(agents.len() == targets.len());
 
+        let start = Instant::now();
         // find permuatation
         let mut left: i32 = 0;
-        let mut right: i32 = 1_000_000_000;
+        // has to be more than the maximum expected search length
+        let mut right: i32 = 2048;
         let n = agents.len();
         let m = targets.len();
         let mut perm = vec![0; n];
+
+        let INF = 1e9 as i32 + 999;
+        // preproccess the distances to save some oracle time
+        let mut preproc = vec![vec![INF; targets.len()]; agents.len()];
+        for (i, agent) in agents.iter().enumerate() {
+            for (j, target) in targets.iter().enumerate() {
+                let mut single_strat = NoCollisionSingle::new();
+                single_strat.prep(map, agent, target);
+                preproc[i][j] = single_strat.expected_time;
+            }
+        }
 
         while left <= right {
             let mid = left+(right-left)/2;
@@ -159,10 +174,10 @@ impl CollisionFree {
             let mut graph: Vec<Vec<usize>> = vec![Vec::new(); n+m];
             for (i, agent) in agents.iter().enumerate() {
                 for (j, target) in targets.iter().enumerate() {
-                    let mut single_strat = NoCollisionSingle::new();
-                    single_strat.prep(map, agent, target);
-                    if single_strat.expected_time == -1 { continue; }
-                    if single_strat.expected_time <= mid {
+                    // let mut single_strat = NoCollisionSingle::new();
+                    // single_strat.prep(map, agent, target);
+                    if preproc[i][j] == -1 { continue; }
+                    if preproc[i][j] <= mid {
                         graph[i].push(j+n);
                         graph[j+n].push(i);
                     }
@@ -191,6 +206,8 @@ impl CollisionFree {
         assigned.prep(map, agents, targets, &perm);
         self.goto = assigned.goto;
         self.ready = true;
+
+        // info!("prep took: {:?}", start.elapsed());
     }
 }
 

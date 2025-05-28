@@ -72,8 +72,8 @@ fn main() {
 
     let strats = vec![
         // AgentStrategies::MakeSpanHopcroft,
-        AgentStrategies::NoCollisionFree,
-        // AgentStrategies::CollisionFree,
+        // AgentStrategies::NoCollisionFree,
+        AgentStrategies::CollisionFree,
     ];
 
     let nruns = 10_000;
