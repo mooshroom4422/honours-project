@@ -127,7 +127,10 @@ impl Runner {
         }
 
         if iter == MAX_ITER { warn!("max iter reached!"); }
-        if self.targets.len() > 0 { println!("did not finish!"); }
+        if self.targets.len() > 0 {
+            warn!("targets left after finishing the loop!");
+            print_board(&self.map, &self.agents, &self.targets);
+        }
 
         if print_res {
             println!("simulation took: {:?}", start.elapsed());

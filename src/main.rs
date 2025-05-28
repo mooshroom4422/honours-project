@@ -19,40 +19,76 @@ use crate::flow::*;
 use crate::bench::*;
 use hopcroft_karp::HopcroftKarp;
 use rand::prelude::*;
-use log::info;
+use log::*;
+use env_logger::fmt::{Color, Formatter};
+use env_logger::Builder;
+use std::io::Write;
+use std::time::Instant;
+
+fn custom_format(buf: &mut Formatter, record: &Record) -> std::io::Result<()> {
+    let mut style = buf.style();
+    let prefix = match record.level() {
+        Level::Error => {
+            style.set_color(Color::Red).set_bold(true);
+            "E"
+        }
+        Level::Warn => {
+            style.set_color(Color::Yellow).set_bold(true);
+            "W"
+        }
+        Level::Info => {
+            style.set_color(Color::Green);
+            "*"
+        }
+        Level::Debug => {
+            style.set_color(Color::Blue);
+            "D"
+        }
+        Level::Trace => {
+            style.set_color(Color::Magenta);
+            "T"
+        }
+    };
+
+    writeln!(buf, "[{}] {}", style.value(prefix), record.args())
+}
 
 fn main() {
-    env_logger::init();
+    Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format(custom_format)
+        .init();
     let maps = vec![
 //        "simple.map",
-        "arena.map",
+//        "arena.map",
 //        "tunnel.map",
-        "den020d.map",
-        "den101d.map",
-        "den202d.map",
+//        "den020d.map",
+//        "den101d.map",
+//        "den202d.map",
         "den312d.map",
-        "den998d.map",
-        // "arena2.map", // too big for n^4 distance oracle
+//        "den998d.map",
+//        "arena2.map", // too big for n^4 distance oracle
     ];
 
     let strats = vec![
         AgentStrategies::MakeSpanHopcroft,
-        AgentStrategies::NoCollisionFree,
+        // AgentStrategies::NoCollisionFree,
         // AgentStrategies::CollisionFree,
     ];
 
-    let nruns = 1000;
+    let nruns = 10_000;
 
     for map_name in maps {
 
         // TODO: for some reason optimal method is worse if num_agents > 1
-        info!("starting map: {}", map_name);
+        info!("benchmarking map: {}", map_name);
 
         let d_time = 15;
         let num_agents = 3;
         let num_targets = 3;
         let map = Map::new(&("resources/maps/".to_owned() + map_name));
+        trace!("generating target set");
         let set = gen_set(&map, nruns, d_time, num_agents, num_targets, &mut rand::thread_rng(), Vec::new(), Vec::new());
+        trace!("done!");
         if set.is_err() {
             println!("Failed to generate test set: {}", set.unwrap_err());
             return;
@@ -60,18 +96,22 @@ fn main() {
 
         let (all_agents, mut all_targets) = set.unwrap();
 
-        println!("{} {}", all_agents.len(), all_targets.len());
+        // println!("{} {}", all_agents.len(), all_targets.len());
 
         let mut strategies: Vec<Box<dyn TargetStrategy>> = Vec::new();
 
+        trace!("generating target paths");
+        let start = Instant::now();
         for targets in &mut all_targets {
             let target_strategy = TargetFollowPath::new(targets.len(), &map,
-                targets.iter().map(|x| x.position).collect(), targets, true, 1000);
+                targets.iter().map(|x| x.position).collect(), targets, true, 0);
             strategies.push(Box::new(target_strategy));
         }
+        trace!("done! took: {:?}", start.elapsed());
 
         let mut collected: Vec<Vec<u64>> = Vec::new();
         for strat in &strats {
+            info!("benchmarking strategy: {:?}", strat);
 
             let agent_template = AgentStrategyTemplate {
                 strategy: strat.clone(),
@@ -152,17 +192,20 @@ fn main() {
 /*
 fn main() {
     env_logger::init();
-    let map = Map::new("resources/maps/arena.map");
+    let map = Map::new("resources/maps/den312d.map");
+
 
     let d_time = std::i32::MAX;
     // let d_time = 2;
     let agents = agents_from(&Vec::from([
-        Point{x: 1, y: 3},
-//        Point{x: 1, y: 3},
+        Point { x: 36, y: 14 },
+        Point { x: 42, y: 39 },
+        Point { x: 17, y: 15 },
     ]));
     let mut targets = targets_from(&Vec::from([
-//        Point{x: 9, y: 1},
-        Point{x: 27, y: 3},
+        Point { x: 24, y: 60 },
+        Point { x: 63, y: 4 },
+        Point { x: 49, y: 5 },
     ]), d_time);
     // let mut agents = agents_random(&map, 3);
     // let mut targets = targets_random(&map, 3, d_time);
@@ -185,7 +228,7 @@ fn main() {
     //agent_strat.prep(&map, &agents, &targets, &mut matcher);
 
     let mut runner = Runner{map: map.clone(), agents, targets, d_time};
-    let took = runner.run(Box::new(agent_strat), &mut follow_path, false, false, true, false, "generated/run.gif", 100);
+    let took = runner.run(Box::new(agent_strat), &mut follow_path, false, true, true, false, "generated/debug_run.gif", 100);
     //let took = runner.run(MakeSpanHopcroft, follow_path, false, true, "generated/run.gif");
     println!("took: {}", took);
 }

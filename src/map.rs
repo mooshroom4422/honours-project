@@ -160,7 +160,7 @@ impl Map {
         (Direction::North, ( 0,  1)),
         (Direction::East,  ( 1,  0)),
         (Direction::South, ( 0, -1)),
-        (Direction::West,  (-1,  1)),
+        (Direction::West,  (-1,  0)),
         (Direction::None,  ( 0,  0)),
     ];
 
@@ -237,6 +237,10 @@ impl Map {
                     let (initial_rectagle, prefs) = Map::compute_board(&mut res, x as i32, y as i32);
                     //println!("{:?}, {:?}", initial_rectagle, prefs);
                     let got = Map::compress(initial_rectagle, prefs);
+                    // if x == 24 && y == 3 {
+                    //     println!("{:?}", got);
+                    //     //panic!();
+                    // }
                     normal_size += (height-2)*(width-2);
                     compressed_size += got.len();
                     compressed[x][y] = got;
@@ -281,6 +285,11 @@ impl Map {
             }
         }
 
+        if stax == 16 && stay == 6 {
+            info!("from");
+            print_from(map, &from);
+        }
+
         while !q.is_empty() {
             let (px, py) = q.pop_front().unwrap();
 
@@ -292,6 +301,11 @@ impl Map {
                     from[x as usize][y as usize] = from[px as usize][py as usize];
                 }
             }
+        }
+
+        if stax == 16 && stay == 6 {
+            info!("from");
+            print_from(map, &from);
         }
 
         let mut pref = HashMap::new();
@@ -325,8 +339,8 @@ impl Map {
         //print_from(map, &from);
         //panic!();
 
-        // assuming that the map is surrounded by walls
-        let mut rect = Rect { xd: 1, yd: 1, xu: map.width-2, yu: map.height-2, dir: Direction::Unreachable };
+        // assuming that the map is surrounded by walls -> WRONG! it is not always the case
+        let mut rect = Rect { xd: 0, yd: 0, xu: map.width-1, yu: map.height-1, dir: Direction::Unreachable };
 
         (rect, pref)
     }
@@ -346,9 +360,10 @@ impl Map {
         queue.push_back(initial_rect);
 
         while !queue.is_empty() {
-            //println!("que: {}", queue.len());
+            // println!("================");
+            // println!("res: {:?}", res);
             let mut rect = queue.pop_front().unwrap();
-            //println!("{:?}", rect);
+            // println!("{:?}", rect);
 
             if rect.xu < rect.xd || rect.yu < rect.yd {
                 continue;
@@ -366,7 +381,7 @@ impl Map {
                 continue;
             }
 
-            let mut splits: Vec<(i32, Rect, Rect)> = Vec::new();
+            let mut splits: Vec<(i32, Rect, Option<Rect>)> = Vec::new();
 
             // if pref dir == sum pref -> uni
             for k in rect.xd .. rect.xu+1 {
@@ -392,14 +407,21 @@ impl Map {
                     let sz = (k-rect.xd+1)*(rect.yu-rect.yd+1);
                     let homo = Rect { xd: rect.xd, yd: rect.yd, xu: k, yu: rect.yu, dir: left[0].0 };
                     let rest = Rect { xd: k+1, yd: rect.yd, xu: rect.xu, yu: rect.yu, dir: Direction::Unreachable };
-                    splits.push((sz as i32, homo, rest));
+                    splits.push((sz as i32, homo, Some(rest)));
                 }
 
                 if right[0].1 > 0 && right[1].1 == 0 {
-                    let sz = (k-rect.xd+1)*(rect.yu-rect.yd+1);
-                    let homo = Rect { xd: k, yd: rect.yd, xu: rect.xu, yu: rect.yu, dir: right[0].0 };
-                    let rest = Rect { xd: rect.xd, yd: rect.yd, xu: k-1, yu: rect.yu, dir: Direction::Unreachable };
-                    splits.push((sz as i32, homo, rest));
+                    if k > 0 {
+                        let sz = (k-rect.xd+1)*(rect.yu-rect.yd+1);
+                        let homo = Rect { xd: k, yd: rect.yd, xu: rect.xu, yu: rect.yu, dir: right[0].0 };
+                        let rest = Rect { xd: rect.xd, yd: rect.yd, xu: k-1, yu: rect.yu, dir: Direction::Unreachable };
+                        splits.push((sz as i32, homo, Some(rest)));
+                    }
+                    else {
+                        let sz = (k-rect.xd+1)*(rect.yu-rect.yd+1);
+                        let homo = Rect { xd: k, yd: rect.yd, xu: rect.xu, yu: rect.yu, dir: right[0].0 };
+                        splits.push((sz as i32, homo, None));
+                    }
                 }
             }
 
@@ -423,20 +445,32 @@ impl Map {
                 down.sort_by(|l, r| r.1.cmp(&l.1));
                 up.sort_by(|l, r| r.1.cmp(&l.1));
 
+                //println!("up: {:?}", up);
+                //println!("down: {:?}", down);
+
                 if down[0].1 > 0 && down[1].1 == 0 {
                     let sz = (rect.xu-rect.xd+1)*(k-rect.yd+1);
                     let homo = Rect { xd: rect.xd, yd: rect.yd, xu: rect.xu, yu: k, dir: down[0].0 };
                     let rest = Rect { xd: rect.xd, yd: k+1, xu: rect.xu, yu: rect.yu, dir: Direction::Unreachable };
-                    splits.push((sz as i32, homo, rest));
+                    splits.push((sz as i32, homo, Some(rest)));
                 }
 
                 if up[0].1 > 0 && up[1].1 == 0 {
-                    let sz = (rect.xu-rect.xd+1)*(rect.yu-k+1);
-                    let homo = Rect { xd: rect.xd, yd: k, xu: rect.xu, yu: rect.yu, dir: down[0].0 };
-                    let rest = Rect { xd: rect.xd, yd: rect.yd, xu: rect.xu, yu: k-1, dir: Direction::Unreachable };
-                    splits.push((sz as i32, homo, rest));
+                    if k > 0 {
+                        let sz = (rect.xu-rect.xd+1)*(rect.yu-k+1);
+                        let homo = Rect { xd: rect.xd, yd: k, xu: rect.xu, yu: rect.yu, dir: up[0].0 };
+                        let rest = Rect { xd: rect.xd, yd: rect.yd, xu: rect.xu, yu: k-1, dir: Direction::Unreachable };
+                        splits.push((sz as i32, homo, Some(rest)));
+                    }
+                    else {
+                        let sz = (rect.xu-rect.xd+1)*(rect.yu-k+1);
+                        let homo = Rect { xd: rect.xd, yd: k, xu: rect.xu, yu: rect.yu, dir: up[0].0 };
+                        splits.push((sz as i32, homo, None));
+                    }
                 }
             }
+
+            //println!("splits: {:?}", splits);
 
             if splits.is_empty() {
                 // if no homogeneous splits are possible split by dimensions
@@ -457,7 +491,9 @@ impl Map {
                 // choose the best split
                 splits.sort_by(|l, r| r.0.cmp(&l.0));
                 res.push(splits[0].1.clone());
-                queue.push_back(splits[0].2.clone());
+                if let Some(rest) = splits[0].2.clone() {
+                    queue.push_back(rest);
+                }
             }
         }
 
@@ -465,6 +501,7 @@ impl Map {
     }
 
     fn load(file_path: &str) -> Option< Vec<Vec<Vec<Rect>>> > {
+        info!("loading the .dist file: {}", file_path);
         let mut file = File::open(file_path).ok()?;
 
         let mut buffer = Vec::new();
@@ -473,6 +510,8 @@ impl Map {
 
         let deserialized: Vec<Vec<Vec<Rect>>> = bincode::deserialize(&buffer)
             .expect("failed to deserialize");
+
+        info!("finished");
 
         Some(deserialized)
     }
@@ -521,6 +560,13 @@ impl Map {
         let mut res = 0;
         let pto = Point { x: tx, y: ty };
         let mut now = Point { x: fx, y: fy };
+        // println!("calling dist: {} {} {} {}", fx, fy, tx, ty);
+
+        // info!("compressed:");
+        // self.print_compressed_from(&Point{x:24, y:3});
+        // println!("{:?}", self.compressed[24][3]);
+        // panic!();
+
         while now.x != tx && now.y != ty {
             res += 1;
             let dir = self.get_direction(&now, &pto);
@@ -564,10 +610,10 @@ impl Map {
             for x in 0..self.width {
                 let p2 = Point{x, y};
                 if !self.valid_point(&p2) {
-                    print!("{}", elegant(&Direction::Unreachable ));
+                    print!("{:>2}", elegant(&Direction::Unreachable ));
                 }
                 else {
-                    print!("{}", elegant(&self.get_direction(pnt, &p2)));
+                    print!("{:>2}", elegant(&self.get_direction(pnt, &p2)));
                 }
             }
             print!("\n");
@@ -609,7 +655,7 @@ pub fn elegant(dir: &Direction) -> String {
 pub fn print_from(map: &Map, from: &Vec<Vec<Direction>>) {
     for y in (0..map.height).rev() {
         for x in 0..map.width {
-            print!("{}", elegant(&from[x][y]));
+            print!("{:>2}", elegant(&from[x][y]));
         }
         print!("\n");
     }

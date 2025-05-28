@@ -2,6 +2,7 @@ use crate::{agent_strategies::*, flow::*, hopcroft_karp::HopcroftKarp, map::*, m
 use std::time::Instant;
 use rand::{rngs::ThreadRng, Rng};
 use tqdm::tqdm;
+use log::{info, trace};
 
 pub struct AgentStrategyTemplate {
     pub strategy: AgentStrategies,
@@ -159,6 +160,7 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, 
         let targets = all_targets[run_id].clone();
 
         let agent_strat = agent_strat_template.construct(&map, &mut agents, &targets);
+        // trace!("constructed");
 
         let mut runner = Runner {
             map: map.clone(),
@@ -171,7 +173,7 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, 
         // println!("{:?}", agents);
         // println!("{:?}", targets);
 
-        let took_steps = runner.run(agent_strat, &mut target_strat[run_id], debug_print, false, false, debug_print, "generated/asd.gif", 3000) as u64;
+        let took_steps = runner.run(agent_strat, &mut target_strat[run_id], debug_print, false, false, debug_print, "generated/asd.gif", 30_000) as u64;
 
         //println!("run: {} -> {:?} {:?} {:?}", iter, num_agents, num_targets, took_steps);
 
