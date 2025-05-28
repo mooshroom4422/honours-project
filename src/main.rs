@@ -59,19 +59,20 @@ fn main() {
         .init();
     let maps = vec![
 //        "simple.map",
-//        "arena.map",
+        "arena.map",
 //        "tunnel.map",
-//        "den020d.map",
-//        "den101d.map",
-//        "den202d.map",
+        "den020d.map",
+        "den101d.map",
+        "den202d.map",
         "den312d.map",
-//        "den998d.map",
-//        "arena2.map", // too big for n^4 distance oracle
+        "den998d.map",
+        // too big for n^4 distance oracle
+        "arena2.map",
     ];
 
     let strats = vec![
-        AgentStrategies::MakeSpanHopcroft,
-        // AgentStrategies::NoCollisionFree,
+        // AgentStrategies::MakeSpanHopcroft,
+        AgentStrategies::NoCollisionFree,
         // AgentStrategies::CollisionFree,
     ];
 
@@ -85,6 +86,7 @@ fn main() {
         let d_time = 15;
         let num_agents = 3;
         let num_targets = 3;
+        let PATH_LENGTH = 150;
         let map = Map::new(&("resources/maps/".to_owned() + map_name));
         trace!("generating target set");
         let set = gen_set(&map, nruns, d_time, num_agents, num_targets, &mut rand::thread_rng(), Vec::new(), Vec::new());
@@ -100,11 +102,11 @@ fn main() {
 
         let mut strategies: Vec<Box<dyn TargetStrategy>> = Vec::new();
 
-        trace!("generating target paths");
+        trace!("generating target paths, path length: {}", PATH_LENGTH);
         let start = Instant::now();
         for targets in &mut all_targets {
             let target_strategy = TargetFollowPath::new(targets.len(), &map,
-                targets.iter().map(|x| x.position).collect(), targets, true, 0);
+                targets.iter().map(|x| x.position).collect(), targets, true, PATH_LENGTH);
             strategies.push(Box::new(target_strategy));
         }
         trace!("done! took: {:?}", start.elapsed());
@@ -198,14 +200,14 @@ fn main() {
     let d_time = std::i32::MAX;
     // let d_time = 2;
     let agents = agents_from(&Vec::from([
-        Point { x: 36, y: 14 },
-        Point { x: 42, y: 39 },
-        Point { x: 17, y: 15 },
+        Point { x: 40, y: 9 },
+        Point { x: 42, y: 53 },
+        Point { x: 58, y: 13 },
     ]));
     let mut targets = targets_from(&Vec::from([
-        Point { x: 24, y: 60 },
-        Point { x: 63, y: 4 },
-        Point { x: 49, y: 5 },
+        Point { x: 25, y: 51 },
+        Point { x: 35, y: 58 },
+        Point { x: 47, y: 12 },
     ]), d_time);
     // let mut agents = agents_random(&map, 3);
     // let mut targets = targets_random(&map, 3, d_time);

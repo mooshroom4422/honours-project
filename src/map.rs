@@ -560,20 +560,21 @@ impl Map {
         let mut res = 0;
         let pto = Point { x: tx, y: ty };
         let mut now = Point { x: fx, y: fy };
-        // println!("calling dist: {} {} {} {}", fx, fy, tx, ty);
+        // println!("calling dist: ({}, {}), ({}, {})", now.x, now.y, tx, ty);
 
         // info!("compressed:");
         // self.print_compressed_from(&Point{x:24, y:3});
         // println!("{:?}", self.compressed[24][3]);
         // panic!();
 
-        while now.x != tx && now.y != ty {
+        while now.x != tx || now.y != ty {
             res += 1;
             let dir = self.get_direction(&now, &pto);
             now = go_direction(now, dir);
-            //println!("{} {} {} {}", fx, fy, tx, ty);
+            //println!("({} {}) ({} {}), {:?}", now.x, now.y, tx, ty, dir);
             //println!("{:?}", now);
         }
+        //println!("got: {}", res);
         return res;
     }
 
