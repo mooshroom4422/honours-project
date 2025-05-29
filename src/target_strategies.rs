@@ -48,17 +48,17 @@ pub struct TargetFollowPath {
     paths: Vec<Vec<Direction>>,
     path_idx: Vec<usize>,
     starting_points: Vec<Point>,
-    blocked: Vec<Vec<HashSet<usize>>>,
+    // blocked: Vec<Vec<HashSet<usize>>>,
 }
 
 impl TargetFollowPath {
-    pub fn new(n: usize,  map: &Map, starting_points: Vec<Point>, targets: &mut Vec<Target>,
+    pub fn new(n: usize, map: &Map, starting_points: Vec<Point>, targets: &mut Vec<Target>,
                generate: bool, len: i32) -> Self {
         let mut res = TargetFollowPath {
             paths: Vec::new(),
             path_idx: vec![0; n],
             starting_points: Vec::new(),
-            blocked: Vec::new()
+            // blocked: Vec::new()
         };
         res.create(n, map, starting_points, targets, generate, len);
         res
@@ -67,28 +67,29 @@ impl TargetFollowPath {
     fn create(&mut self, n: usize, map: &Map, starting_points: Vec<Point>,
               targets: &mut Vec<Target>, generate: bool, len: i32) {
         self.paths = vec![Vec::new(); n];
-        self.blocked = vec![vec![HashSet::new(); map.height]; map.width];
+        let mut blocked = vec![vec![HashSet::new(); map.height]; map.width];
         assert!(starting_points.len() == n);
         self.starting_points = starting_points;
         for point in self.starting_points.iter() {
-            assert!(!self.blocked[point.x][point.y].contains(&0));
-            self.blocked[point.x][point.y].insert(0);
+            assert!(!blocked[point.x][point.y].contains(&0));
+            blocked[point.x][point.y].insert(0);
         }
         if !generate { return; }
         for (i, target) in targets.iter_mut().enumerate() {
-            self.generate_path(i, len, map, self.starting_points[i], target.timer, 5.0);
+            self.generate_path(i, len, map, self.starting_points[i], target.timer, 5.0, &mut blocked);
             self.generate_path_target(map, i, self.starting_points[i], target);
         }
         // println!("{:?}", targets);
     }
 
-    fn is_blocked(&self, pt: &Point, time: usize) -> bool {
+    fn is_blocked(&self, pt: &Point, time: usize, blocked: &Vec<Vec<HashSet<usize>>>) -> bool {
         let x = pt.x;
         let y = pt.y;
-        self.blocked[x][y].contains(&time)
+        blocked[x][y].contains(&time)
     }
 
-    fn generate_path(&mut self, idx: usize, mut len: i32, map: &Map, start_position: Point, timer: i32, same_dir: f64) {
+    fn generate_path(&mut self, idx: usize, mut len: i32, map: &Map, start_position: Point, timer: i32,
+                     same_dir: f64, blocked: &mut Vec<Vec<HashSet<usize>>>) {
         if len == -1 {
             len = 10; // randomize later
             todo!();
@@ -105,7 +106,7 @@ impl TargetFollowPath {
             let mut dir = dirs.choose(&mut rand::thread_rng()).unwrap();
             if time_now == 0 { iter = std::i32::MAX; }
             while iter < 20 && (!map.valid_point(&go_direction(position, *dir))
-                || self.is_blocked(&go_direction(position, *dir), (i+1) as usize)) {
+                || self.is_blocked(&go_direction(position, *dir), (i+1) as usize, blocked)) {
 
                 // dir = dirs.choose(&mut rand::thread_rng()).unwrap();
                 let mut pr_now = probs.clone();
@@ -137,7 +138,7 @@ impl TargetFollowPath {
             else { time_now -= 1; }
             self.paths[idx].push(*dir);
             position = go_direction(position, *dir);
-            self.blocked[position.x][position.y].insert((i+1) as usize);
+            blocked[position.x][position.y].insert((i+1) as usize);
         }
     }
 

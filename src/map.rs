@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::{self, Write, Read};
 use bytesize::ByteSize;
 use log::{info, trace};
+use tqdm::tqdm;
 
 #[derive(Clone, Debug, PartialEq)]
 enum Tile {
@@ -136,13 +137,12 @@ pub fn go_direction(point: Point, direction: Direction) -> Point {
     }
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
+// avoid clonning the maps struct since it contains the distance oracle
 pub struct Map {
     pub height: usize,
     pub width: usize,
     map: Vec<Vec<Tile>>,
-    // dist: Vec<Vec<usize>>,
-    // from: Vec<Vec<Direction>>,
     compressed: Vec<Vec<Vec<Rect>>>,
 }
 
@@ -195,11 +195,27 @@ impl Map {
             }
         }
 
+        // make sure that the borders are walls
+        for y in 0..height {
+            map[0][y] = Tile::Wall;
+            map[width-1][y] = Tile::Wall;
+        }
+
+        for x in 0..width {
+            map[x][0] = Tile::Wall;
+            map[x][height-1] = Tile::Wall;
+        }
+
         let database_path = format!("{}.dist", file_path);
         let got = Map::load(&database_path);
 
         if let Some(compressed) = got {
             info!("loaded: {}", database_path);
+            let size = compressed.iter()
+                .flat_map(|v| v.iter())
+                .map(|v| v.len())
+                .sum::<usize>() * size_of::<Rect>() / (1024*1024);
+            info!("in memory size: {:.2}MB", size);
             trace!("width: {}", width);
             trace!("height: {}", height);
             trace!("compressed.len(): {}", compressed.len());
@@ -231,7 +247,7 @@ impl Map {
 
         let mut compressed = vec![vec![Vec::new(); height]; width];
 
-        for y in 0..height {
+        for y in tqdm(0..height) {
             for x in 0..width {
                 if res.valid_point_expl(x, y) {
                     let (initial_rectagle, prefs) = Map::compute_board(&mut res, x as i32, y as i32);
@@ -241,18 +257,21 @@ impl Map {
                     //     println!("{:?}", got);
                     //     //panic!();
                     // }
-                    normal_size += (height-2)*(width-2);
-                    compressed_size += got.len();
+                    // size of n^2 lookup table, a bit optimistic
+                    // *2, since we keep both direction and distance
+                    normal_size += (height-2)*(width-2)*2;
+                    // *5, since we keep 2 points and direction in a Rect struct
+                    compressed_size += got.len()*3;
                     compressed[x][y] = got;
                     //println!("{}, {}: \n {:?}", x, y, compressed.len());
                 }
             }
-            trace!("finished y: {}/{}, completed: {:.2}%", y, height, (y as f64)/(height as f64)*100.0);
+            // trace!("finished y: {}/{}, completed: {:.2}%", y, height, (y as f64)/(height as f64)*100.0);
         }
 
         let ratio = (normal_size as f64)/(compressed_size as f64);
-        info!("normal: {}", normal_size);
-        info!("compressed: {}", compressed_size);
+        trace!("normal: {}", normal_size);
+        trace!("compressed: {}", compressed_size);
         info!("compression ratio: {}", ratio);
         info!("compression took: {:?}", start.elapsed());
 
@@ -285,10 +304,10 @@ impl Map {
             }
         }
 
-        if stax == 16 && stay == 6 {
-            info!("from");
-            print_from(map, &from);
-        }
+        // if stax == 16 && stay == 6 {
+        //     info!("from");
+        //     print_from(map, &from);
+        // }
 
         while !q.is_empty() {
             let (px, py) = q.pop_front().unwrap();
@@ -303,10 +322,10 @@ impl Map {
             }
         }
 
-        if stax == 16 && stay == 6 {
-            info!("from");
-            print_from(map, &from);
-        }
+        // if stax == 16 && stay == 6 {
+        //     info!("from");
+        //     print_from(map, &from);
+        // }
 
         let mut pref = HashMap::new();
 
@@ -339,8 +358,8 @@ impl Map {
         //print_from(map, &from);
         //panic!();
 
-        // assuming that the map is surrounded by walls -> WRONG! it is not always the case
-        let mut rect = Rect { xd: 0, yd: 0, xu: map.width-1, yu: map.height-1, dir: Direction::Unreachable };
+        // assuming that the map is surrounded by walls -> WRONG! it is not always the case, double check each map
+        let mut rect = Rect { xd: 1, yd: 1, xu: map.width-2, yu: map.height-2, dir: Direction::Unreachable };
 
         (rect, pref)
     }
@@ -561,6 +580,7 @@ impl Map {
         let pto = Point { x: tx, y: ty };
         let mut now = Point { x: fx, y: fy };
         // println!("calling dist: ({}, {}), ({}, {})", now.x, now.y, tx, ty);
+        // println!("{:?} -> {:?}", self.map[now.x][now.y], self.map[tx][ty]);
 
         // info!("compressed:");
         // self.print_compressed_from(&Point{x:24, y:3});

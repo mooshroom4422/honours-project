@@ -63,20 +63,21 @@ fn main() {
 //        "tunnel.map",
         "den020d.map",
         "den101d.map",
-        "den202d.map",
-        "den312d.map",
-        "den998d.map",
+//        "den202d.map",
+//        "den312d.map",
+//        "den998d.map",
         // too big for n^4 distance oracle
         "arena2.map",
+        "Aftershock.map",
     ];
 
-    let strats = vec![
+    let strats: Vec<AgentStrategies> = vec![
         // AgentStrategies::MakeSpanHopcroft,
+        // AgentStrategies::CollisionFree,
         // AgentStrategies::NoCollisionFree,
-        AgentStrategies::CollisionFree,
     ];
 
-    let nruns = 10_000;
+    let nruns = 0;
 
     for map_name in maps {
 
@@ -126,7 +127,7 @@ fn main() {
                 strat.flush();
             }
 
-            let res = bench(map.clone(), nruns as i32, d_time, all_agents.clone(),
+            let res = bench(&map, nruns as i32, d_time, all_agents.clone(),
                             all_targets.clone(), agent_template, &mut strategies, false, true);
 
             match res {
