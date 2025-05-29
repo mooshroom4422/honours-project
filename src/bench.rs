@@ -144,7 +144,7 @@ pub fn gen_set(map: &Map, nruns: usize, d_time: i32, num_agents: usize, num_targ
     Ok((all_agents, all_targets))
 }
 
-pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, all_targets: Vec<Vec<Target>>,
+pub fn bench(map: &Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, all_targets: Vec<Vec<Target>>,
              agent_strat_template: AgentStrategyTemplate, target_strat: &mut Vec<Box<dyn TargetStrategy>>,
              debug_print: bool, collect_individual: bool
             ) -> Result<BenchmarkResult, String> {
@@ -161,7 +161,7 @@ pub fn bench(map: Map, num_runs: i32, d_time: i32, all_agents: Vec<Vec<Agent>>, 
         let agent_strat = agent_strat_template.construct(&map, &mut agents, &targets);
 
         let mut runner = Runner {
-            map: map.clone(),
+            map,
             agents,
             targets,
             d_time

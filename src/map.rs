@@ -128,7 +128,7 @@ pub fn go_direction(point: Point, direction: Direction) -> Point {
     }
 }
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Map {
     pub height: usize,
     pub width: usize,
@@ -164,6 +164,17 @@ impl Map {
                 }
                 // println!("x={} y={} = {:?}", x, y, map[x][y]);
             }
+        }
+
+        // make sure that the borders are walls
+        for y in 0..height {
+            map[0][y] = Tile::Wall;
+            map[width-1][y] = Tile::Wall;
+        }
+
+        for x in 0..width {
+            map[x][0] = Tile::Wall;
+            map[x][height-1] = Tile::Wall;
         }
 
         // for now, precompute distances using bfs

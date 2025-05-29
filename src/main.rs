@@ -35,12 +35,12 @@ fn main() {
     ];
 
     let strats = vec![
-        // AgentStrategies::MakeSpanHopcroft,
-        // AgentStrategies::CollisionFree,
-        AgentStrategies::NoCollisionFree,
+        AgentStrategies::MakeSpanHopcroft,
+        AgentStrategies::CollisionFree,
+        // AgentStrategies::NoCollisionFree,
     ];
 
-    let nruns = 250;
+    let nruns = 10_000;
 
     for map_name in maps {
 
@@ -82,7 +82,7 @@ fn main() {
                 strat.flush();
             }
 
-            let res = bench(map.clone(), nruns as i32, d_time, all_agents.clone(),
+            let res = bench(&map, nruns as i32, d_time, all_agents.clone(),
                             all_targets.clone(), agent_template, &mut strategies, false, true);
 
             match res {

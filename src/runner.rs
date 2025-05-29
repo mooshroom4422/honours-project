@@ -6,14 +6,14 @@ use crate::generate_gif::*;
 use crate::agent_strategies::*;
 use crate::target_strategies::*;
 
-pub struct Runner {
-    pub map: Map,
+pub struct Runner<'a> {
+    pub map: &'a Map,
     pub agents: Vec<Agent>,
     pub targets: Vec<Target>,
     pub d_time: i32,
 }
 
-impl Runner {
+impl Runner<'_> {
     pub fn run(&mut self, mut agent_strat: Box<dyn AgentStrategy>, target_strat: &mut Box<dyn TargetStrategy>,
             debug_printing: bool, enable_runtime_checks: bool, enable_gif: bool, print_res: bool, gif_path: &str,
             MAX_ITER: i32) -> i32 {
