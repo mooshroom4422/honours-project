@@ -72,7 +72,7 @@ impl NoCollisionSingle {
 
     pub fn prep(&mut self, map: &Map, agent: &Agent, target: &Target) {
         let mut l = 0;
-        let mut r = 2048 as i32;
+        let mut r = (1 << 18) as i32;
         while l <= r {
             let mid = l+(r-l)/2;
             if map.dist_point(&agent.position, &target.at_time(mid as usize)) as i32 <= mid {
@@ -152,7 +152,7 @@ impl CollisionFree {
         // find permuatation
         let mut left: i32 = 0;
         // has to be more than the maximum expected search length
-        let mut right: i32 = 2048;
+        let mut right: i32 = (1 << 18);
         let n = agents.len();
         let m = targets.len();
         let mut perm = vec![0; n];

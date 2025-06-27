@@ -59,35 +59,40 @@ fn main() {
         .init();
     let maps = vec![
 //        "simple.map",
-        "arena.map",
+//        "arena.map",
 //        "tunnel.map",
-        "den020d.map",
-        "den101d.map",
+//        "den020d.map",
+//        "den101d.map",
 //        "den202d.map",
 //        "den312d.map",
 //        "den998d.map",
         // too big for n^4 distance oracle
-        "arena2.map",
-        "Aftershock.map",
+//        "arena2.map",
+//        "Aftershock.map",
+//        "Labyrinth.map",
+        "WheelofWar.map",
+        "random512-25-8.map",
+        "Milan_1_512.map",
+        "Shanghai_2_512.map",
     ];
 
     let strats: Vec<AgentStrategies> = vec![
-        // AgentStrategies::MakeSpanHopcroft,
-        // AgentStrategies::CollisionFree,
+        AgentStrategies::MakeSpanHopcroft,
+        AgentStrategies::CollisionFree,
         // AgentStrategies::NoCollisionFree,
     ];
 
-    let nruns = 0;
+    let nruns = 1_000;
 
     for map_name in maps {
 
         // TODO: for some reason optimal method is worse if num_agents > 1
         info!("benchmarking map: {}", map_name);
 
-        let d_time = 15;
-        let num_agents = 3;
-        let num_targets = 3;
-        let PATH_LENGTH = 150;
+        let d_time = std::i32::MAX;
+        let num_agents = 4;
+        let num_targets = 4;
+        let path_length = (1 << 10);
         let map = Map::new(&("resources/maps/".to_owned() + map_name));
         trace!("generating target set");
         let set = gen_set(&map, nruns, d_time, num_agents, num_targets, &mut rand::thread_rng(), Vec::new(), Vec::new());
@@ -103,11 +108,11 @@ fn main() {
 
         let mut strategies: Vec<Box<dyn TargetStrategy>> = Vec::new();
 
-        trace!("generating target paths, path length: {}", PATH_LENGTH);
+        trace!("generating target paths, path length: {}", path_length);
         let start = Instant::now();
         for targets in &mut all_targets {
             let target_strategy = TargetFollowPath::new(targets.len(), &map,
-                targets.iter().map(|x| x.position).collect(), targets, true, PATH_LENGTH);
+                targets.iter().map(|x| x.position).collect(), targets, true, path_length);
             strategies.push(Box::new(target_strategy));
         }
         trace!("done! took: {:?}", start.elapsed());

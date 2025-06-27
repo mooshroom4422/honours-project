@@ -186,14 +186,19 @@ impl Map {
             .parse::<usize>().unwrap();
 
         let mut map = vec![vec![Tile::Wall; height]; width];
+        let mut valid_points: usize = 0;
         for y in (0..height).rev() {
             for x in 0..width {
                 if lines[(height-y-1)+4].as_bytes()[x] == b'.' {
                     map[x][y] = Tile::Free;
+                    valid_points += 1;
                 }
                 // println!("x={} y={} = {:?}", x, y, map[x][y]);
             }
         }
+    
+        // two 4d vecs, one for direction and second one for distance
+        let normal_size = valid_points*valid_points*2;
 
         // make sure that the borders are walls
         for y in 0..height {
@@ -215,7 +220,15 @@ impl Map {
                 .flat_map(|v| v.iter())
                 .map(|v| v.len())
                 .sum::<usize>() * size_of::<Rect>() / (1024*1024);
-            info!("in memory size: {:.2}MB", size);
+            let compressed_size = compressed.iter()
+                .flat_map(|v| v.iter())
+                .map(|v| v.len()) 
+                .sum::<usize>() * 5;
+            let ratio = (normal_size as f64)/(compressed_size as f64);
+            info!("normal: {}", normal_size);
+            info!("compressed: {}", compressed_size);
+            info!("compression ratio: {}", ratio);
+            info!("approx consumed memory: {:.2}MB", size);
             trace!("width: {}", width);
             trace!("height: {}", height);
             trace!("compressed.len(): {}", compressed.len());
@@ -242,8 +255,7 @@ impl Map {
 
         // print_board(&res, &Vec::new(), &Vec::new());
 
-        let mut normal_size = 0;
-        let mut compressed_size = 0;
+        let mut compressed_size: usize = 0;
 
         let mut compressed = vec![vec![Vec::new(); height]; width];
 
@@ -259,19 +271,20 @@ impl Map {
                     // }
                     // size of n^2 lookup table, a bit optimistic
                     // *2, since we keep both direction and distance
-                    normal_size += (height-2)*(width-2)*2;
+                    // normal_size += (height-2)*(width-2)*2;
                     // *5, since we keep 2 points and direction in a Rect struct
-                    compressed_size += got.len()*3;
+                    compressed_size += got.len()*5;
                     compressed[x][y] = got;
                     //println!("{}, {}: \n {:?}", x, y, compressed.len());
                 }
             }
             // trace!("finished y: {}/{}, completed: {:.2}%", y, height, (y as f64)/(height as f64)*100.0);
         }
-
+        
+        let normal_size = valid_points*valid_points;
         let ratio = (normal_size as f64)/(compressed_size as f64);
-        trace!("normal: {}", normal_size);
-        trace!("compressed: {}", compressed_size);
+        info!("normal: {}", normal_size);
+        info!("compressed: {}", compressed_size);
         info!("compression ratio: {}", ratio);
         info!("compression took: {:?}", start.elapsed());
 
@@ -586,8 +599,13 @@ impl Map {
         // self.print_compressed_from(&Point{x:24, y:3});
         // println!("{:?}", self.compressed[24][3]);
         // panic!();
-
+    
         while now.x != tx || now.y != ty {
+            if res > 1e7 as usize { 
+                println!("{:?} -> {:?}", self.map[fx][fy], self.map[tx][ty]);
+                println!("{} {} -> {} {}, now: {} {}", fx, fy, tx, ty, now.x, now.y);
+                panic!(); 
+            }
             res += 1;
             let dir = self.get_direction(&now, &pto);
             now = go_direction(now, dir);
